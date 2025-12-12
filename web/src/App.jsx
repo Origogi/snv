@@ -8,8 +8,8 @@ function App() {
   const overlayRef = useRef(null)
   const [mapLoaded, setMapLoaded] = useState(false)
 
-  // Supabase + IndexedDB 캐시 데이터 로드
-  const { merchants, loading, source, message, refresh } = useMerchants()
+  // Supabase + IndexedDB 캐시로 데이터 로드
+  const { merchants, loading, source, message } = useMerchants()
 
   // 좌표별로 가맹점 그룹화 (중복 좌표 처리)
   const merchantsByLocation = useMemo(() => {
@@ -76,7 +76,7 @@ function App() {
     `
   }
 
-  // 지도 초기화 및 마커 표시
+  // 지도 초기화 및 마커 표시 (클러스터링 적용)
   useEffect(() => {
     if (merchantsByLocation.size === 0) return
 
@@ -267,11 +267,6 @@ function App() {
             {loading ? '⏳' : source === 'cache' ? '💾' : source === 'network' ? '☁️' : '❌'}
             {' '}{message}
           </span>
-          {!loading && (
-            <button className="refresh-btn" onClick={refresh} title="새로고침">
-              🔄
-            </button>
-          )}
         </div>
       </header>
 

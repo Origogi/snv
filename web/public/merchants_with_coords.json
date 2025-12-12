@@ -264,6 +264,15 @@
     "place_url": null
   },
   {
+    "name": "복농장생고기숯불구이",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기 성남시 중원구 금상로67번길 2",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
+  },
+  {
     "name": "투다리",
     "category": "일반대중음식",
     "business_type": "음식점",
@@ -1534,6 +1543,15 @@
     },
     "place_id": "10216172",
     "place_url": "http://place.map.kakao.com/10216172"
+  },
+  {
+    "name": "칠성족발",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기 성남시 중원구 성남대로1151번길 2,",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
   },
   {
     "name": "처갓집양념치킨(금광점)",
@@ -7308,6 +7326,15 @@
     "place_url": "http://place.map.kakao.com/34302202"
   },
   {
+    "name": "꾼스",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기도 성남시 중원구 산성대로 278-5",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
+  },
+  {
     "name": "왕서방",
     "category": "중식",
     "business_type": "음식점",
@@ -8508,6 +8535,15 @@
     "place_url": "http://place.map.kakao.com/1307194713"
   },
   {
+    "name": "주라",
+    "category": "일반대중음식",
+    "business_type": "음식점",
+    "address": "경기도 성남시 중원구 산성대로296번길 8-1",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
+  },
+  {
     "name": "매코미닭발",
     "category": "한식",
     "business_type": "음식점",
@@ -8614,6 +8650,15 @@
     },
     "place_id": "26412937",
     "place_url": "http://place.map.kakao.com/26412937"
+  },
+  {
+    "name": "타노시이도톤보리",
+    "category": "일반대중음식",
+    "business_type": "음식점",
+    "address": "경기도 성남시 중원구 희망로 325",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
   },
   {
     "name": "짱닭치킨 (단대오거리점)",
@@ -11410,6 +11455,15 @@
     },
     "place_id": "1590710583",
     "place_url": "http://place.map.kakao.com/1590710583"
+  },
+  {
+    "name": "보람푸드",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기도 성남시 중원구 광명로 165",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
   },
   {
     "name": "이모네왕포차",
@@ -14220,6 +14274,15 @@
     "place_url": "http://place.map.kakao.com/1781488599"
   },
   {
+    "name": "탑골 직화구이",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 야탑남로88번길 26",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
+  },
+  {
     "name": "옛집",
     "category": "한식",
     "business_type": "음식점",
@@ -16656,6 +16719,15 @@
     "place_url": "http://place.map.kakao.com/15495376"
   },
   {
+    "name": "국군제2037부대",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 이매로 173",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
+  },
+  {
     "name": "도토베르구이치킨",
     "category": "일반대중음식",
     "business_type": "음식점",
@@ -16750,6 +16822,15 @@
     },
     "place_id": "11943823",
     "place_url": "http://place.map.kakao.com/11943823"
+  },
+  {
+    "name": "제일f.s",
+    "category": "일반대중음식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 야탑남로 255,",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
   },
   {
     "name": "오징어랑 친구랑",
@@ -18180,6 +18261,24 @@
     "place_url": "http://place.map.kakao.com/17279806"
   },
   {
+    "name": "(주)꽃달임",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 안양판교로1201번길 55-7",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
+  },
+  {
+    "name": "(주)산들래",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 안양판교로1201번길 61",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
+  },
+  {
     "name": "엄마분식",
     "category": "한식",
     "business_type": "음식점",
@@ -18214,6 +18313,15 @@
     },
     "place_id": "10028417",
     "place_url": "http://place.map.kakao.com/10028417"
+  },
+  {
+    "name": "Tu e lo (뚜에이오)",
+    "category": "양식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 운중로225번길 14-1",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
   },
   {
     "name": "역전우동0410",
@@ -18948,6 +19056,24 @@
     "place_url": "http://place.map.kakao.com/1465537638"
   },
   {
+    "name": "풀무원푸드앤컬처 지역난방공사분당",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 분당로 368,",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
+  },
+  {
+    "name": "풀무원푸드앤컬처 지역난방공사판교",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 판교로228번길 88",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
+  },
+  {
     "name": "풀무원푸드앤컬처 지역난방공사판교",
     "category": "한식",
     "business_type": "음식점",
@@ -19198,6 +19324,15 @@
     },
     "place_id": "765130075",
     "place_url": "http://place.map.kakao.com/765130075"
+  },
+  {
+    "name": "차이나팩토리딜라이트 판교점",
+    "category": "일반대중음식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 분당내곡로 150,",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
   },
   {
     "name": "분당야탑역점 미정국수0410",
@@ -19570,6 +19705,15 @@
     },
     "place_id": "20305790",
     "place_url": "http://place.map.kakao.com/20305790"
+  },
+  {
+    "name": "성남중앙도서관 구내식당",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 야탑남로 82,",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
   },
   {
     "name": "소호디자인앤커피",
@@ -19990,6 +20134,15 @@
     },
     "place_id": "23491324",
     "place_url": "http://place.map.kakao.com/23491324"
+  },
+  {
+    "name": "프랑스식탁",
+    "category": "양식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 운중로267번길 13-3,",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
   },
   {
     "name": "주식회사 크래버대게나라",
@@ -21144,6 +21297,15 @@
     "place_url": "http://place.map.kakao.com/25104553"
   },
   {
+    "name": "진미떡볶이판교점",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 운중로243번길 13,",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
+  },
+  {
     "name": "중앙도서관카페애노쉬",
     "category": "일반대중음식",
     "business_type": "음식점",
@@ -21540,6 +21702,15 @@
     "place_url": "http://place.map.kakao.com/27479933"
   },
   {
+    "name": "브래드웍스",
+    "category": "일반대중음식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 운중로225번길 8-7",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
+  },
+  {
     "name": "서가네의정부부대찌개",
     "category": "한식",
     "business_type": "음식점",
@@ -21718,6 +21889,15 @@
     },
     "place_id": "1504286529",
     "place_url": "http://place.map.kakao.com/1504286529"
+  },
+  {
+    "name": "오뎅에 필 꼬치면",
+    "category": "일식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 운중로225번길 48-7",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
   },
   {
     "name": "(주)후니드 SK가스판교점",
@@ -23076,6 +23256,15 @@
     "place_url": "http://place.map.kakao.com/18489007"
   },
   {
+    "name": "노란코끼리 판교점",
+    "category": "일반대중음식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 운중로277번길 46-8,",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
+  },
+  {
     "name": "장수본가해장국",
     "category": "한식",
     "business_type": "음식점",
@@ -23386,6 +23575,15 @@
     },
     "place_id": "18861109",
     "place_url": "http://place.map.kakao.com/18861109"
+  },
+  {
+    "name": "스웨덴 시어머니와 요리하기",
+    "category": "양식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 운중로267번길 7",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
   },
   {
     "name": "철뚝집",
@@ -24322,6 +24520,15 @@
     },
     "place_id": "1008321781",
     "place_url": "http://place.map.kakao.com/1008321781"
+  },
+  {
+    "name": "디딜방아",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 두밀로 290,",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
   },
   {
     "name": "주식회사 오창은군산집",
@@ -26388,6 +26595,15 @@
     "place_url": "http://place.map.kakao.com/1732764871"
   },
   {
+    "name": "본우리집밥 국군의무사령부점",
+    "category": "일반대중음식",
+    "business_type": "음식점",
+    "address": "경기도 성남시 분당구 새마을로177번길 81",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
+  },
+  {
     "name": "카페온더데스크",
     "category": "일반대중음식",
     "business_type": "음식점",
@@ -27060,6 +27276,15 @@
     "place_url": "http://place.map.kakao.com/395250465"
   },
   {
+    "name": "더벤티 서판교점",
+    "category": "일반대중음식",
+    "business_type": "음식점",
+    "address": "경기도 성남시 분당구 운중로267번길 3-10",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
+  },
+  {
     "name": "성남시분당시니어클럽 공감&펫",
     "category": "일반대중음식",
     "business_type": "음식점",
@@ -27070,6 +27295,15 @@
     },
     "place_id": "1280025373",
     "place_url": "http://place.map.kakao.com/1280025373"
+  },
+  {
+    "name": "이남장(남서울점)",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기도 성남시 분당구 안양판교로1201번길 31",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
   },
   {
     "name": "조이엘",
@@ -29832,6 +30066,15 @@
     "place_url": "http://place.map.kakao.com/1070805771"
   },
   {
+    "name": "더이스트하우스",
+    "category": "일반대중음식",
+    "business_type": "음식점",
+    "address": "경기도 성남시 분당구 운중로225번길 30",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
+  },
+  {
     "name": "(주)라혼",
     "category": "일식",
     "business_type": "음식점",
@@ -30238,6 +30481,15 @@
     },
     "place_id": "9240044",
     "place_url": "http://place.map.kakao.com/9240044"
+  },
+  {
+    "name": "도미노피자 성남단대점",
+    "category": "양식",
+    "business_type": "음식점",
+    "address": "경기 성남시 수정구 희망로 523,",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
   },
   {
     "name": "청계산손두부",
@@ -32124,6 +32376,15 @@
     "place_url": "http://place.map.kakao.com/13102133"
   },
   {
+    "name": "삼주외식산업(주)-국가기록원",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기 성남시 수정구 대왕판교로851번길 30",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
+  },
+  {
     "name": "진참치",
     "category": "일식",
     "business_type": "음식점",
@@ -32504,6 +32765,15 @@
       "lat": 37.4422763700735,
       "lng": 127.139600662298
     },
+    "place_id": null,
+    "place_url": null
+  },
+  {
+    "name": "지혜식당",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기 성남시 수정구 수정남로305번길 5",
+    "coords": null,
     "place_id": null,
     "place_url": null
   },
@@ -33444,6 +33714,15 @@
     "place_url": "http://place.map.kakao.com/1334133829"
   },
   {
+    "name": "주식회사 배꼽한정식",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기 성남시 수정구 가마절로 9",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
+  },
+  {
     "name": "옛날철판구이",
     "category": "일반대중음식",
     "business_type": "음식점",
@@ -33874,6 +34153,15 @@
     },
     "place_id": "22645874",
     "place_url": "http://place.map.kakao.com/22645874"
+  },
+  {
+    "name": "모란쌍방울",
+    "category": "일반대중음식",
+    "business_type": "음식점",
+    "address": "경기 성남시 수정구 남문로69번길 5-3,",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
   },
   {
     "name": "신토불이",
@@ -36502,6 +36790,15 @@
     },
     "place_id": "1458457871",
     "place_url": "http://place.map.kakao.com/1458457871"
+  },
+  {
+    "name": "당진아구찜",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기도 성남시 수정구 수정로 207",
+    "coords": null,
+    "place_id": null,
+    "place_url": null
   },
   {
     "name": "국수미가",
