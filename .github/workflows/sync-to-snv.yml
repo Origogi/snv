@@ -1,0 +1,51 @@
+name: Sync to SNV (Public Repo)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'web/**'
+      - '.github/workflows/deploy.yml'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout private repo
+        uses: actions/checkout@v4
+
+      - name: Checkout snv repo
+        uses: actions/checkout@v4
+        with:
+          repository: Origogi/snv
+          token: ${{ secrets.SNV_PAT }}
+          path: snv-repo
+
+      - name: Sync files
+        run: |
+          # web 폴더 동기화
+          rm -rf snv-repo/web
+          cp -r web snv-repo/
+
+          # workflow 동기화
+          mkdir -p snv-repo/.github/workflows
+          cp .github/workflows/deploy.yml snv-repo/.github/workflows/
+
+          # .gitignore 동기화
+          cp .gitignore snv-repo/ 2>/dev/null || true
+
+      - name: Commit and push
+        working-directory: snv-repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "sync: from private repo (${{ github.sha }})"
+            git push
+          fi
