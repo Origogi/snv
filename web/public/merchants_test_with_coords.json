@@ -1,0 +1,122 @@
+[
+  {
+    "name": "멕시칸제일분점",
+    "category": "일반대중음식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 판교로 431",
+    "coords": {
+      "lat": 37.4057592342799,
+      "lng": 127.12174316027
+    },
+    "place_id": null,
+    "place_url": null
+  },
+  {
+    "name": "영양센타분당점",
+    "category": "일반대중음식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 분당로53번길 9,",
+    "coords": {
+      "lat": 37.3839147497361,
+      "lng": 127.121329456762
+    },
+    "place_id": "21319400",
+    "place_url": "http://place.map.kakao.com/21319400"
+  },
+  {
+    "name": "돈파스타",
+    "category": "일반대중음식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 황새울로330번길 16,",
+    "coords": {
+      "lat": 37.38613614673017,
+      "lng": 127.12357785222316
+    },
+    "place_id": "8256228",
+    "place_url": "http://place.map.kakao.com/8256228"
+  },
+  {
+    "name": "에센마일드치킨",
+    "category": "일반대중음식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 매화로38번길 8",
+    "coords": {
+      "lat": 37.4107414977067,
+      "lng": 127.134637381093
+    },
+    "place_id": null,
+    "place_url": null
+  },
+  {
+    "name": "정가네",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 야탑남로 230,",
+    "coords": {
+      "lat": 37.38524676529559,
+      "lng": 127.12953840889001
+    },
+    "place_id": "19338855",
+    "place_url": "http://place.map.kakao.com/19338855"
+  },
+  {
+    "name": "남영불갈비",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 야탑로105번길 6",
+    "coords": {
+      "lat": 37.410355226421,
+      "lng": 127.130625331507
+    },
+    "place_id": "16533280",
+    "place_url": "http://place.map.kakao.com/16533280"
+  },
+  {
+    "name": "풍천민물장어",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 서현1동 248-4",
+    "coords": {
+      "lat": 37.3674081695086,
+      "lng": 127.102043794605
+    },
+    "place_id": "12672970",
+    "place_url": "http://place.map.kakao.com/12672970"
+  },
+  {
+    "name": "재단법인 케이티그룹희망나눔재단 분당",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 불정로 90",
+    "coords": {
+      "lat": 37.3587825300798,
+      "lng": 127.114936252291
+    },
+    "place_id": "14683430",
+    "place_url": "http://place.map.kakao.com/14683430"
+  },
+  {
+    "name": "안집",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 새마을로51번길 5",
+    "coords": {
+      "lat": 37.38368198739747,
+      "lng": 127.13648222457303
+    },
+    "place_id": "9236739",
+    "place_url": "http://place.map.kakao.com/9236739"
+  },
+  {
+    "name": "의정부부대찌개",
+    "category": "한식",
+    "business_type": "음식점",
+    "address": "경기 성남시 분당구 운중로138번길 28-8,",
+    "coords": {
+      "lat": 37.39108459358599,
+      "lng": 127.07673307787913
+    },
+    "place_id": "26008459",
+    "place_url": "http://place.map.kakao.com/26008459"
+  }
+]
