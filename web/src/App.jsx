@@ -261,7 +261,13 @@ function App() {
   return (
     <div className="app">
       <header className="header">
-        <h1>성남시 아동수당 가맹점 지도</h1>
+        <div className="header-title">
+          <img src={`${import.meta.env.BASE_URL}appicon.png`} alt="앱 아이콘" className="app-icon" />
+          <div className="title-text">
+            <h1>성남 아이포인트</h1>
+            <p className="subtitle">놓치지 않는 아동수당 가맹점 지도</p>
+          </div>
+        </div>
         <div className="header-info">
           <span className={`status ${source || ''}`}>
             {loading ? '⏳' : source === 'cache' ? '💾' : source === 'network' ? '☁️' : '❌'}
