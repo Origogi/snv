@@ -151,6 +151,7 @@ const createDonutClusterSvg = (categoryData, total) => {
         y="${center}"
         text-anchor="middle"
         dominant-baseline="central"
+        font-family="'Noto Sans KR', sans-serif"
         font-size="${total >= 1000 ? 11 : total >= 100 ? 13 : 15}"
         font-weight="bold"
         fill="url(#${gradientId})"
@@ -183,6 +184,7 @@ const createSingleClusterSvg = (color, total) => {
         y="${center}"
         text-anchor="middle"
         dominant-baseline="central"
+        font-family="'Noto Sans KR', sans-serif"
         font-size="${total >= 1000 ? 11 : total >= 100 ? 13 : 15}"
         font-weight="bold"
         fill="${color}"
@@ -225,7 +227,7 @@ const createMultiTypeMarkerSvg = (colors, count) => {
         <path d="${layerIconPath}" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </g>
       <circle cx="${size - 8}" cy="${size - 8}" r="8" fill="white" stroke="none"/>
-      <text x="${size - 8}" y="${size - 8}" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="bold" fill="#333">${count}</text>
+      <text x="${size - 8}" y="${size - 8}" text-anchor="middle" dominant-baseline="central" font-family="'Noto Sans KR', sans-serif" font-size="10" font-weight="bold" fill="#333">${count}</text>
     </svg>
   `
 }
@@ -248,7 +250,7 @@ const createSingleTypeMarkerWithBadgeSvg = (color, iconPath, count) => {
         <path d="${iconPath}" fill="white"/>
       </g>
       <circle cx="${size - 8}" cy="${size - 8}" r="8" fill="white" stroke="none"/>
-      <text x="${size - 8}" y="${size - 8}" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="bold" fill="#333">${count}</text>
+      <text x="${size - 8}" y="${size - 8}" text-anchor="middle" dominant-baseline="central" font-family="'Noto Sans KR', sans-serif" font-size="10" font-weight="bold" fill="#333">${count}</text>
     </svg>
   `
 }
@@ -740,8 +742,11 @@ function App() {
           })
           svg = createDonutClusterSvg(categoryData, total)
         } else {
-          // 단일 필터: 단색 클러스터
-          svg = createSingleClusterSvg(primaryColor, total)
+          // 단일 업종 클러스터: 해당 업종의 색상 사용
+          const dominantBusinessType = Object.keys(businessTypeCounts)[0]
+          const dominantFilter = BUSINESS_TYPE_FILTERS.find(f => f.key === dominantBusinessType)
+          const clusterColor = dominantFilter?.color || primaryColor
+          svg = createSingleClusterSvg(clusterColor, total)
         }
 
         // 커스텀 오버레이 생성
@@ -858,7 +863,11 @@ function App() {
                   })
                   svg = createDonutClusterSvg(categoryData, total)
                 } else {
-                  svg = createSingleClusterSvg(primaryColor, total)
+                  // 단일 업종 클러스터: 해당 업종의 색상 사용
+                  const dominantBusinessType = Object.keys(businessTypeCounts)[0]
+                  const dominantFilter = BUSINESS_TYPE_FILTERS.find(f => f.key === dominantBusinessType)
+                  const clusterColor = dominantFilter?.color || primaryColor
+                  svg = createSingleClusterSvg(clusterColor, total)
                 }
 
                 const content = document.createElement('div')
