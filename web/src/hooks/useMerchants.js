@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { loadMerchants, clearCache } from '../lib/merchantCache'
+import { loadMerchants, clearCache, getLastUpdatedAt } from '../lib/merchantCache'
 
 /**
  * 가맹점 데이터 로딩 훅
@@ -11,6 +11,7 @@ import { loadMerchants, clearCache } from '../lib/merchantCache'
  */
 export function useMerchants() {
   const [merchants, setMerchants] = useState([])
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(null)
   const [status, setStatus] = useState({
     loading: true,
     source: null,
@@ -20,6 +21,8 @@ export function useMerchants() {
   // 데이터 로드
   useEffect(() => {
     loadMerchants(setMerchants, setStatus)
+    // 마지막 업데이트 시간 조회
+    getLastUpdatedAt().then(setLastUpdatedAt)
   }, [])
 
   // 수동 새로고침
@@ -35,6 +38,7 @@ export function useMerchants() {
     loading: status.loading,
     source: status.source,
     message: status.message,
+    lastUpdatedAt,
     refresh
   }
 }

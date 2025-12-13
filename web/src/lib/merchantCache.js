@@ -32,6 +32,25 @@ export async function getSupabaseVersion() {
 }
 
 /**
+ * Supabase에서 마지막 업데이트 시간 조회
+ */
+export async function getLastUpdatedAt() {
+  try {
+    const { data, error } = await supabase
+      .from('metadata')
+      .select('value')
+      .eq('key', 'last_updated')
+      .single()
+
+    if (error) throw error
+    return data?.value || null
+  } catch (error) {
+    console.error('마지막 업데이트 시간 조회 실패:', error)
+    return null
+  }
+}
+
+/**
  * Supabase에서 전체 가맹점 데이터 로드
  * Supabase 기본 limit이 1000개이므로 페이지네이션으로 전체 로드
  */
