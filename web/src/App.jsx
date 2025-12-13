@@ -96,6 +96,9 @@ const createDonutClusterSvg = (categoryData, total) => {
   const strokeWidth = 6
   const circumference = 2 * Math.PI * radius
 
+  // 고유 ID 생성 (필터 충돌 방지)
+  const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
   // 카테고리별 도넛 세그먼트 생성
   let currentOffset = 0
   const segments = categoryData.map(({ color, count }) => {
@@ -123,8 +126,8 @@ const createDonutClusterSvg = (categoryData, total) => {
     return `<stop offset="${offset}%" stop-color="${item.color}"/>`
   }).join('')
 
-  // 고유 ID 생성 (그라데이션 충돌 방지)
-  const gradientId = `grad-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  const gradientId = `grad-${uniqueId}`
+  const shadowId = `donutShadow-${uniqueId}`
 
   return `
     <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
@@ -132,12 +135,12 @@ const createDonutClusterSvg = (categoryData, total) => {
         <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="0%">
           ${gradientStops}
         </linearGradient>
-        <filter id="donutShadow" x="-30%" y="-30%" width="160%" height="160%">
+        <filter id="${shadowId}" x="-30%" y="-30%" width="160%" height="160%">
           <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.15"/>
         </filter>
       </defs>
       <!-- 배경 원 (흰색) -->
-      <circle cx="${center}" cy="${center}" r="${radius + strokeWidth/2 + 2}" fill="white" filter="url(#donutShadow)"/>
+      <circle cx="${center}" cy="${center}" r="${radius + strokeWidth/2 + 2}" fill="white" filter="url(#${shadowId})"/>
       <!-- 도넛 세그먼트 -->
       ${segments}
       <!-- 중앙 흰색 원 -->
@@ -151,6 +154,38 @@ const createDonutClusterSvg = (categoryData, total) => {
         font-size="${total >= 1000 ? 11 : total >= 100 ? 13 : 15}"
         font-weight="bold"
         fill="url(#${gradientId})"
+      >${total >= 1000 ? Math.floor(total/1000) + 'k' : total}</text>
+    </svg>
+  `
+}
+
+// 단일 필터 클러스터 SVG 생성
+const createSingleClusterSvg = (color, total) => {
+  const size = 52
+  const center = size / 2
+  const radius = 20
+  const strokeWidth = 6
+  const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  const shadowId = `singleClusterShadow-${uniqueId}`
+
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+      <defs>
+        <filter id="${shadowId}" x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.15"/>
+        </filter>
+      </defs>
+      <circle cx="${center}" cy="${center}" r="${radius + strokeWidth/2 + 2}" fill="white" filter="url(#${shadowId})"/>
+      <circle cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="${color}" stroke-width="${strokeWidth}"/>
+      <circle cx="${center}" cy="${center}" r="${radius - strokeWidth/2 - 1}" fill="white"/>
+      <text
+        x="${center}"
+        y="${center}"
+        text-anchor="middle"
+        dominant-baseline="central"
+        font-size="${total >= 1000 ? 11 : total >= 100 ? 13 : 15}"
+        font-weight="bold"
+        fill="${color}"
       >${total >= 1000 ? Math.floor(total/1000) + 'k' : total}</text>
     </svg>
   `
@@ -223,6 +258,7 @@ function App() {
   const mapInstanceRef = useRef(null)
   const clustererRef = useRef(null)
   const markersRef = useRef([])
+  const clusterOverlaysRef = useRef([]) // 커스텀 클러스터 오버레이들
   const selectedOverlayRef = useRef(null) // 선택된 마커 강조 오버레이
   const selectedMarkerRef = useRef(null) // 선택된 원본 마커 (숨김용)
   const [mapLoaded, setMapLoaded] = useState(false)
@@ -521,11 +557,13 @@ function App() {
     // 선택된 마커 참조 초기화 (클러스터러 전체가 재생성되므로 복원 불필요)
     selectedMarkerRef.current = null
 
-    // 기존 클러스터러 제거
+    // 기존 클러스터러 및 오버레이 제거
     if (clustererRef.current) {
       clustererRef.current.clear()
       clustererRef.current = null
     }
+    clusterOverlaysRef.current.forEach(overlay => overlay.setMap(null))
+    clusterOverlaysRef.current = []
 
     // 데이터가 없으면 마커도 없음
     if (merchantsByLocation.size === 0) {
@@ -605,6 +643,9 @@ function App() {
         image: markerImage
       })
 
+      // 클러스터 계산용 데이터 저장
+      marker._merchantList = merchantList
+
       // 마커 클릭 이벤트 - 바텀시트 열기 + 선택 마커 강조
       kakao.maps.event.addListener(marker, 'click', () => {
         // 이전에 숨겼던 마커 복원 (클러스터러에 다시 추가)
@@ -631,33 +672,11 @@ function App() {
     // 다중 필터 여부에 따라 클러스터러 생성
     const isMultiFilter = selectedFilters.length > 1
 
-    // 다중 필터일 때 그라데이션 색상 생성
-    const getGradientColors = () => {
-      if (!isMultiFilter) return null
-      const colors = selectedFilters.map(filterKey => {
-        const filter = BUSINESS_TYPE_FILTERS.find(f => f.key === filterKey)
-        return filter?.color || '#FF6B6B'
-      })
-      return colors
-    }
-    const gradientColors = getGradientColors()
+    // 기존 클러스터 오버레이 제거
+    clusterOverlaysRef.current.forEach(overlay => overlay.setMap(null))
+    clusterOverlaysRef.current = []
 
-    // 다중 필터용 클러스터 스타일 (그라데이션 보더 - 12시 방향에서 분할)
-    const multiFilterStyle = gradientColors ? {
-      width: '44px',
-      height: '44px',
-      background: `linear-gradient(white, white) padding-box, linear-gradient(90deg, ${gradientColors[0]} 0%, ${gradientColors[0]} 50%, ${gradientColors[1] || gradientColors[0]} 50%, ${gradientColors[1] || gradientColors[0]} 100%) border-box`,
-      borderRadius: '50%',
-      border: '3px solid transparent',
-      color: '#333',
-      textAlign: 'center',
-      fontWeight: 'bold',
-      lineHeight: '38px',
-      fontSize: '15px',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
-    } : null
-
-    // 마커 클러스터러 생성
+    // 마커 클러스터러 생성 (투명 스타일 - 커스텀 오버레이로 대체)
     const clusterer = new kakao.maps.MarkerClusterer({
       map: map,
       markers: markers,
@@ -665,21 +684,206 @@ function App() {
       averageCenter: true,
       minLevel: 4,
       disableClickZoom: false,
-      styles: isMultiFilter && multiFilterStyle ? [multiFilterStyle] : [{
-        // 단일 필터: 기존 스타일
-        width: '44px',
-        height: '44px',
-        background: 'rgba(255, 255, 255, 0.95)',
-        borderRadius: '50%',
-        border: `3px solid ${primaryColor}`,
-        color: primaryColor,
-        textAlign: 'center',
-        fontWeight: 'bold',
-        lineHeight: '38px',
-        fontSize: '15px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+      styles: [{
+        // 투명하게 설정 (커스텀 오버레이로 대체)
+        width: '1px',
+        height: '1px',
+        background: 'transparent',
+        color: 'transparent'
       }]
     })
+
+    // 클러스터 오버레이 업데이트 함수
+    const updateClusterOverlays = (clusters) => {
+      // 기존 오버레이 제거
+      clusterOverlaysRef.current.forEach(overlay => overlay.setMap(null))
+      clusterOverlaysRef.current = []
+
+      if (!clusters || clusters.length === 0) return
+
+      clusters.forEach(cluster => {
+        const clusterMarkers = cluster.getMarkers() || []
+        if (clusterMarkers.length < 2) return // 2개 미만은 클러스터 아님
+
+        const bounds = cluster.getBounds()
+        const sw = bounds.getSouthWest()
+        const ne = bounds.getNorthEast()
+        const position = new kakao.maps.LatLng(
+          (sw.getLat() + ne.getLat()) / 2,
+          (sw.getLng() + ne.getLng()) / 2
+        )
+
+        // 클러스터 내 마커들의 업종별 카운트 계산
+        const businessTypeCounts = {}
+        let totalMerchants = 0
+        clusterMarkers.forEach(marker => {
+          // 마커에 저장된 merchantList에서 업종 정보 추출
+          const merchantList = marker._merchantList || []
+          totalMerchants += merchantList.length
+          merchantList.forEach(m => {
+            const bt = m.business_type
+            if (bt) {
+              businessTypeCounts[bt] = (businessTypeCounts[bt] || 0) + 1
+            }
+          })
+        })
+
+        const total = totalMerchants || clusterMarkers.length
+
+        // SVG 생성
+        let svg
+        if (isMultiFilter && Object.keys(businessTypeCounts).length > 1) {
+          // 다중 필터 + 여러 업종: 도넛 클러스터
+          const categoryData = Object.entries(businessTypeCounts).map(([bt, count]) => {
+            const filter = BUSINESS_TYPE_FILTERS.find(f => f.key === bt)
+            return { color: filter?.color || '#FF6B6B', count }
+          })
+          svg = createDonutClusterSvg(categoryData, total)
+        } else {
+          // 단일 필터: 단색 클러스터
+          svg = createSingleClusterSvg(primaryColor, total)
+        }
+
+        // 커스텀 오버레이 생성
+        const content = document.createElement('div')
+        content.innerHTML = svg
+        content.style.cursor = 'pointer'
+        content.onclick = () => {
+          // 클러스터 클릭 시 줌인
+          const level = map.getLevel() - 1
+          map.setLevel(level, { anchor: position })
+        }
+
+        const overlay = new kakao.maps.CustomOverlay({
+          position: position,
+          content: content,
+          yAnchor: 0.5,
+          xAnchor: 0.5,
+          zIndex: 10
+        })
+        overlay.setMap(map)
+        clusterOverlaysRef.current.push(overlay)
+      })
+    }
+
+    // 클러스터 변경 이벤트에 오버레이 업데이트 연결
+    kakao.maps.event.addListener(clusterer, 'clustered', (clusters) => {
+      updateClusterOverlays(clusters)
+    })
+
+    // 줌 레벨 변경 시 클러스터 오버레이 업데이트
+    kakao.maps.event.addListener(map, 'zoom_changed', () => {
+      const level = map.getLevel()
+      // minLevel(4) 미만이면 클러스터링 해제 - 오버레이 제거
+      if (level < 4) {
+        clusterOverlaysRef.current.forEach(overlay => overlay.setMap(null))
+        clusterOverlaysRef.current = []
+      }
+    })
+
+    // 초기 클러스터링 - redraw 후 클러스터 수동 생성
+    setTimeout(() => {
+      clusterer.redraw()
+      // redraw 직후 클러스터 직접 계산
+      setTimeout(() => {
+        // 클러스터러의 내부 메서드를 통해 클러스터 정보 접근
+        if (typeof clusterer._getClusterByLevel === 'function') {
+          const clusters = clusterer._getClusterByLevel(map.getLevel())
+          if (clusters && clusters.length > 0) {
+            updateClusterOverlays(clusters)
+          }
+        } else {
+          // 대체 방안: 마커들을 직접 분석하여 클러스터 위치 계산
+          const bounds = map.getBounds()
+          const level = map.getLevel()
+
+          // minLevel 이상일 때만 클러스터링
+          if (level >= 4) {
+            // 그리드 기반 간단한 클러스터링 계산
+            const gridSize = 60
+            const clusters = new Map()
+
+            markers.forEach(marker => {
+              const pos = marker.getPosition()
+              // 마커가 현재 뷰포트 내에 있는지 확인
+              if (bounds.contain(pos)) {
+                const proj = map.getProjection()
+                const point = proj.pointFromCoords(pos)
+                const gridKey = `${Math.floor(point.x / gridSize)}_${Math.floor(point.y / gridSize)}`
+
+                if (!clusters.has(gridKey)) {
+                  clusters.set(gridKey, { markers: [], center: point })
+                }
+                clusters.get(gridKey).markers.push(marker)
+              }
+            })
+
+            // 2개 이상인 클러스터만 오버레이 생성
+            clusters.forEach((cluster, key) => {
+              if (cluster.markers.length >= 2) {
+                // 클러스터 중심 좌표 계산
+                let sumLat = 0, sumLng = 0
+                cluster.markers.forEach(m => {
+                  const p = m.getPosition()
+                  sumLat += p.getLat()
+                  sumLng += p.getLng()
+                })
+                const centerPos = new kakao.maps.LatLng(
+                  sumLat / cluster.markers.length,
+                  sumLng / cluster.markers.length
+                )
+
+                // 업종별 카운트
+                const businessTypeCounts = {}
+                let totalMerchants = 0
+                cluster.markers.forEach(marker => {
+                  const merchantList = marker._merchantList || []
+                  totalMerchants += merchantList.length
+                  merchantList.forEach(m => {
+                    const bt = m.business_type
+                    if (bt) {
+                      businessTypeCounts[bt] = (businessTypeCounts[bt] || 0) + 1
+                    }
+                  })
+                })
+
+                const total = totalMerchants || cluster.markers.length
+
+                // SVG 생성
+                let svg
+                if (isMultiFilter && Object.keys(businessTypeCounts).length > 1) {
+                  const categoryData = Object.entries(businessTypeCounts).map(([bt, count]) => {
+                    const filter = BUSINESS_TYPE_FILTERS.find(f => f.key === bt)
+                    return { color: filter?.color || '#FF6B6B', count }
+                  })
+                  svg = createDonutClusterSvg(categoryData, total)
+                } else {
+                  svg = createSingleClusterSvg(primaryColor, total)
+                }
+
+                const content = document.createElement('div')
+                content.innerHTML = svg
+                content.style.cursor = 'pointer'
+                content.onclick = () => {
+                  map.setLevel(level - 1, { anchor: centerPos })
+                }
+
+                const overlay = new kakao.maps.CustomOverlay({
+                  position: centerPos,
+                  content: content,
+                  yAnchor: 0.5,
+                  xAnchor: 0.5,
+                  zIndex: 10
+                })
+                overlay.setMap(map)
+                clusterOverlaysRef.current.push(overlay)
+              }
+            })
+          }
+        }
+      }, 50)
+    }, 50)
+
     clustererRef.current = clusterer
     markersRef.current = markers
   }, [merchantsByLocation, mapLoaded, currentFilter, selectedFilters])
