@@ -344,7 +344,7 @@ function App() {
       markers.push(marker)
     })
 
-    // 마커 클러스터러 생성 (필터 색상 적용)
+    // 마커 클러스터러 생성 (필터 색상 적용 - 테두리 스타일)
     const clusterer = new kakao.maps.MarkerClusterer({
       map: map,
       markers: markers,
@@ -352,16 +352,17 @@ function App() {
       averageCenter: true,
       minLevel: 4,
       styles: [{
-        width: '50px',
-        height: '50px',
-        background: markerColor,
+        width: '44px',
+        height: '44px',
+        background: 'rgba(255, 255, 255, 0.95)',
         borderRadius: '50%',
-        color: '#fff',
+        border: `3px solid ${markerColor}`,
+        color: markerColor,
         textAlign: 'center',
         fontWeight: 'bold',
-        lineHeight: '50px',
-        fontSize: '14px',
-        boxShadow: '0 2px 6px rgba(0,0,0,0.3)'
+        lineHeight: '38px',
+        fontSize: '15px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
       }]
     })
     clustererRef.current = clusterer
@@ -420,23 +421,33 @@ function App() {
 
   return (
     <div className="app">
-      <header className="header">
-        <div className="header-title">
-          <img src={`${import.meta.env.BASE_URL}appicon.png`} alt="앱 아이콘" className="app-icon" />
-          <div className="title-text">
-            <h1>성남 아이포인트</h1>
-            <p className="subtitle">놓치지 않는 아동수당 가맹점 지도</p>
-          </div>
-        </div>
-        <div className="header-info">
-          <span className={`status ${source || ''}`}>
-            {loading ? '⏳' : source === 'cache' ? '💾' : source === 'network' ? '☁️' : '❌'}
-            {' '}{message}
-          </span>
-        </div>
-      </header>
-
       <div className="content">
+        {/* 상단 그라데이션 바 */}
+        <div className="top-gradient-bar"></div>
+
+        {/* 플로팅 앱바 */}
+        <header className="header">
+          <div className="header-card">
+            <div className="header-content">
+              <div className="header-title">
+                <div className="app-icon-wrapper">
+                  <img src={`${import.meta.env.BASE_URL}appicon.png`} alt="앱 아이콘" className="app-icon" />
+                </div>
+                <div className="title-text">
+                  <h1>성남 아이포인트</h1>
+                  <p className="subtitle">아동수당 가맹점 지도</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* 데이터 상태 표시 (우측 상단) */}
+        <div className={`data-status ${source || ''}`}>
+          {loading ? '⏳' : source === 'cache' ? '💾' : source === 'network' ? '☁️' : '❌'}
+          {' '}{message}
+        </div>
+
         {/* 업종 필터 버튼 (플로팅) */}
         <div className="filter-bar">
           {BUSINESS_TYPE_FILTERS.map(filter => {
