@@ -88,6 +88,136 @@ const getCategoryIconSvg = (businessType) => {
   `
 }
 
+// 도넛 클러스터 SVG 생성 (다중 필터용)
+const createDonutClusterSvg = (categoryData, total) => {
+  const size = 52
+  const center = size / 2
+  const radius = 20
+  const strokeWidth = 6
+  const circumference = 2 * Math.PI * radius
+
+  // 카테고리별 도넛 세그먼트 생성
+  let currentOffset = 0
+  const segments = categoryData.map(({ color, count }) => {
+    const ratio = count / total
+    const dashLength = circumference * ratio
+    const dashOffset = circumference - currentOffset
+    currentOffset += dashLength
+
+    return `<circle
+      cx="${center}"
+      cy="${center}"
+      r="${radius}"
+      fill="none"
+      stroke="${color}"
+      stroke-width="${strokeWidth}"
+      stroke-dasharray="${dashLength} ${circumference - dashLength}"
+      stroke-dashoffset="${dashOffset}"
+      transform="rotate(-90 ${center} ${center})"
+    />`
+  }).join('')
+
+  // 그라데이션 정의 (선택된 카테고리 색상들로)
+  const gradientStops = categoryData.map((item, idx) => {
+    const offset = (idx / (categoryData.length - 1 || 1)) * 100
+    return `<stop offset="${offset}%" stop-color="${item.color}"/>`
+  }).join('')
+
+  // 고유 ID 생성 (그라데이션 충돌 방지)
+  const gradientId = `grad-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+      <defs>
+        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="0%">
+          ${gradientStops}
+        </linearGradient>
+        <filter id="donutShadow" x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.15"/>
+        </filter>
+      </defs>
+      <!-- 배경 원 (흰색) -->
+      <circle cx="${center}" cy="${center}" r="${radius + strokeWidth/2 + 2}" fill="white" filter="url(#donutShadow)"/>
+      <!-- 도넛 세그먼트 -->
+      ${segments}
+      <!-- 중앙 흰색 원 -->
+      <circle cx="${center}" cy="${center}" r="${radius - strokeWidth/2 - 1}" fill="white"/>
+      <!-- 숫자 텍스트 (그라데이션) -->
+      <text
+        x="${center}"
+        y="${center}"
+        text-anchor="middle"
+        dominant-baseline="central"
+        font-size="${total >= 1000 ? 11 : total >= 100 ? 13 : 15}"
+        font-weight="bold"
+        fill="url(#${gradientId})"
+      >${total >= 1000 ? Math.floor(total/1000) + 'k' : total}</text>
+    </svg>
+  `
+}
+
+// 복합 마커 SVG 생성 (같은 위치에 여러 업종이 있을 때)
+const createMultiTypeMarkerSvg = (colors, count) => {
+  const size = 36
+  const center = size / 2
+  const radius = center - 2
+
+  // 레이어/스택 아이콘 path (여러 개 겹침을 표현)
+  const layerIconPath = 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'
+
+  // 그라디언트 ID 생성
+  const gradientId = `multi-grad-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
+  // 부드러운 그라디언트 (위에서 아래로)
+  const gradientStops = colors.length === 2
+    ? `<stop offset="0%" stop-color="${colors[0]}"/>
+       <stop offset="100%" stop-color="${colors[1]}"/>`
+    : `<stop offset="0%" stop-color="${colors[0]}"/>
+       <stop offset="100%" stop-color="${colors[colors.length - 1] || colors[0]}"/>`
+
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+      <defs>
+        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="100%">
+          ${gradientStops}
+        </linearGradient>
+        <filter id="multiShadow" x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.25"/>
+        </filter>
+      </defs>
+      <circle cx="${center}" cy="${center}" r="${radius}" fill="url(#${gradientId})" filter="url(#multiShadow)"/>
+      <g transform="translate(${center - 10}, ${center - 10}) scale(0.83)">
+        <path d="${layerIconPath}" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+      <circle cx="${size - 8}" cy="${size - 8}" r="8" fill="white" stroke="none"/>
+      <text x="${size - 8}" y="${size - 8}" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="bold" fill="#333">${count}</text>
+    </svg>
+  `
+}
+
+// 단일 타입 마커 + 숫자 뱃지 SVG 생성 (같은 위치에 같은 업종 여러 개)
+const createSingleTypeMarkerWithBadgeSvg = (color, iconPath, count) => {
+  const size = 36
+  const center = size / 2
+  const radius = center - 2
+
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+      <defs>
+        <filter id="singleShadow" x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.25"/>
+        </filter>
+      </defs>
+      <circle cx="${center}" cy="${center}" r="${radius}" fill="${color}" filter="url(#singleShadow)"/>
+      <g transform="translate(${center - 9}, ${center - 9}) scale(0.75)">
+        <path d="${iconPath}" fill="white"/>
+      </g>
+      <circle cx="${size - 8}" cy="${size - 8}" r="8" fill="white" stroke="none"/>
+      <text x="${size - 8}" y="${size - 8}" text-anchor="middle" dominant-baseline="central" font-size="10" font-weight="bold" fill="#333">${count}</text>
+    </svg>
+  `
+}
+
 function App() {
   const mapRef = useRef(null)
   const mapInstanceRef = useRef(null)
@@ -96,7 +226,9 @@ function App() {
   const selectedOverlayRef = useRef(null) // 선택된 마커 강조 오버레이
   const selectedMarkerRef = useRef(null) // 선택된 원본 마커 (숨김용)
   const [mapLoaded, setMapLoaded] = useState(false)
-  const [selectedFilter, setSelectedFilter] = useState('음식점')
+  const [selectedFilters, setSelectedFilters] = useState(['음식점']) // 다중 선택 (최대 2개)
+  const [showCategorySheet, setShowCategorySheet] = useState(false) // 카테고리 선택 바텀시트
+  const [tempSelectedFilters, setTempSelectedFilters] = useState([]) // 바텀시트 임시 선택
   const [selectedMerchants, setSelectedMerchants] = useState(null) // 바텀시트용 선택된 가맹점
   const [selectedPosition, setSelectedPosition] = useState(null) // 선택된 마커 위치
 
@@ -114,13 +246,13 @@ function App() {
     }
   }, [lastUpdatedAt])
 
-  // 필터링된 가맹점 목록
+  // 필터링된 가맹점 목록 (다중 필터)
   const filteredMerchants = useMemo(() => {
-    return merchants.filter(m => m.business_type === selectedFilter)
-  }, [merchants, selectedFilter])
+    return merchants.filter(m => selectedFilters.includes(m.business_type))
+  }, [merchants, selectedFilters])
 
-  // 현재 선택된 필터 정보
-  const currentFilter = BUSINESS_TYPE_FILTERS.find(f => f.key === selectedFilter)
+  // 현재 선택된 필터 정보 (첫 번째 필터 기준 - 마커 색상용)
+  const currentFilter = BUSINESS_TYPE_FILTERS.find(f => f.key === selectedFilters[0])
 
   // 좌표별로 가맹점 그룹화 (중복 좌표 처리)
   const merchantsByLocation = useMemo(() => {
@@ -136,6 +268,76 @@ function App() {
 
     return locationMap
   }, [filteredMerchants])
+
+  // 필터 칩 클릭 핸들러
+  const handleFilterClick = (filterKey) => {
+    setSelectedFilters(prev => {
+      // 이미 선택된 필터면 제거 (단, 최소 1개는 유지)
+      if (prev.includes(filterKey)) {
+        if (prev.length > 1) {
+          return prev.filter(f => f !== filterKey)
+        }
+        return prev // 마지막 하나는 제거 불가
+      }
+      // 새로운 필터 추가 (최대 2개)
+      if (prev.length < 2) {
+        return [...prev, filterKey]
+      }
+      // 2개 선택 상태에서 새 필터 클릭 시 바텀시트 열기
+      return prev
+    })
+  }
+
+  // 필터 제거 핸들러 (X 버튼)
+  const handleRemoveFilter = (filterKey, e) => {
+    e.stopPropagation()
+    if (selectedFilters.length > 1) {
+      setSelectedFilters(prev => prev.filter(f => f !== filterKey))
+    }
+  }
+
+  // 카테고리 선택 바텀시트 열기
+  const openCategorySheet = () => {
+    setTempSelectedFilters([...selectedFilters])
+    setShowCategorySheet(true)
+  }
+
+  // 카테고리 선택 바텀시트 닫기
+  const closeCategorySheet = () => {
+    setShowCategorySheet(false)
+    setTempSelectedFilters([])
+  }
+
+  // 임시 필터 토글 (바텀시트 내)
+  const toggleTempFilter = (filterKey) => {
+    setTempSelectedFilters(prev => {
+      if (prev.includes(filterKey)) {
+        // 최소 1개는 유지
+        if (prev.length > 1) {
+          return prev.filter(f => f !== filterKey)
+        }
+        return prev
+      }
+      // 최대 2개까지만
+      if (prev.length < 2) {
+        return [...prev, filterKey]
+      }
+      return prev
+    })
+  }
+
+  // 필터 적용 (바텀시트 저장)
+  const applyFilters = () => {
+    if (tempSelectedFilters.length > 0) {
+      setSelectedFilters(tempSelectedFilters)
+    }
+    closeCategorySheet()
+  }
+
+  // 필터 초기화
+  const resetFilters = () => {
+    setTempSelectedFilters(['음식점'])
+  }
 
   // 바텀시트 닫기
   const closeBottomSheet = () => {
@@ -154,7 +356,7 @@ function App() {
   }
 
   // 선택된 마커 강조 오버레이 생성
-  const createSelectedMarkerOverlay = (position, color, iconPath) => {
+  const createSelectedMarkerOverlay = (position, color, iconPath, multiTypeColors = null) => {
     const { kakao } = window
     if (!kakao || !kakao.maps || !mapInstanceRef.current) return
 
@@ -163,9 +365,37 @@ function App() {
       selectedOverlayRef.current.setMap(null)
     }
 
+    // 복합 업종 마커용 그라디언트 ID
+    const gradientId = `pin-grad-${Date.now()}`
+
     // 핀 모양 마커 SVG (애니메이션 포함)
     // color를 50% 투명도로 변환 (pulse 배경용)
-    const pulseColor = color + '80' // hex color + 50% alpha
+    const pulseColor = (multiTypeColors ? multiTypeColors[0] : color) + '80' // hex color + 50% alpha
+
+    // 복합 업종일 때 그라디언트 정의 (사선 그라디언트)
+    const gradientDef = multiTypeColors && multiTypeColors.length > 1 ? `
+      <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${multiTypeColors[0]}"/>
+        <stop offset="100%" stop-color="${multiTypeColors[1]}"/>
+      </linearGradient>
+    ` : ''
+
+    const fillColor = multiTypeColors && multiTypeColors.length > 1 ? `url(#${gradientId})` : color
+
+    // 레이어 아이콘 (복합 업종용)
+    const layerIconPath = 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'
+
+    // 아이콘 부분: 복합 업종이면 레이어 아이콘, 아니면 기존 카테고리 아이콘
+    const iconContent = multiTypeColors ? `
+      <g transform="translate(12, 10) scale(1)">
+        <path d="${layerIconPath}" fill="none" stroke="${multiTypeColors[0]}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+    ` : `
+      <g transform="translate(12, 10) scale(1)">
+        <path d="${iconPath}" fill="${color}"/>
+      </g>
+    `
+
     const content = `
       <div class="selected-marker-container">
         <div class="selected-marker-pulse" style="background: ${pulseColor};"></div>
@@ -175,12 +405,11 @@ function App() {
               <filter id="pinShadow" x="-50%" y="-20%" width="200%" height="150%">
                 <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.3"/>
               </filter>
+              ${gradientDef}
             </defs>
-            <path d="M24 0C10.745 0 0 10.745 0 24c0 18 24 36 24 36s24-18 24-36C48 10.745 37.255 0 24 0z" fill="${color}" filter="url(#pinShadow)"/>
+            <path d="M24 0C10.745 0 0 10.745 0 24c0 18 24 36 24 36s24-18 24-36C48 10.745 37.255 0 24 0z" fill="${fillColor}" filter="url(#pinShadow)"/>
             <circle cx="24" cy="22" r="17" fill="white" opacity="0.95"/>
-            <g transform="translate(12, 10) scale(1)">
-              <path d="${iconPath}" fill="${color}"/>
-            </g>
+            ${iconContent}
           </svg>
         </div>
       </div>
@@ -304,10 +533,20 @@ function App() {
       return
     }
 
-    // 현재 필터 색상과 아이콘으로 마커 이미지 생성
-    const markerColor = currentFilter?.color || '#FF6B6B'
-    const markerIconPath = currentFilter?.iconPath || ''
-    const markerImage = createMarkerImage(markerColor, markerIconPath)
+    // 마커 이미지 캐시 (카테고리별)
+    const markerImageCache = {}
+    const getMarkerImage = (businessType) => {
+      if (!markerImageCache[businessType]) {
+        const filter = BUSINESS_TYPE_FILTERS.find(f => f.key === businessType)
+        const color = filter?.color || '#FF6B6B'
+        const iconPath = filter?.iconPath || ''
+        markerImageCache[businessType] = createMarkerImage(color, iconPath)
+      }
+      return markerImageCache[businessType]
+    }
+
+    // 클러스터러 스타일 (다중 필터 시 첫 번째 필터 색상 사용)
+    const primaryColor = currentFilter?.color || '#FF6B6B'
 
     // 위치별로 마커 생성 (중복 좌표 처리)
     const markers = []
@@ -316,6 +555,47 @@ function App() {
       const [lat, lng] = key.split(',').map(Number)
       const position = new kakao.maps.LatLng(lat, lng)
       const isMultiple = merchantList.length > 1
+
+      // 같은 위치의 업종 종류 확인 (중복 제거)
+      const uniqueBusinessTypes = [...new Set(merchantList.map(m => m.business_type))]
+      const hasMultipleTypes = uniqueBusinessTypes.length > 1
+
+      // 대표 가맹점의 카테고리로 마커 색상 결정
+      const primaryMerchant = merchantList[0]
+      const markerFilter = BUSINESS_TYPE_FILTERS.find(f => f.key === primaryMerchant.business_type)
+      const markerColor = markerFilter?.color || '#FF6B6B'
+      const markerIconPath = markerFilter?.iconPath || ''
+
+      // 마커 이미지 결정: 복합 업종이면 복합 마커, 아니면 기존 마커
+      let markerImage
+      let multiTypeColors = null
+
+      if (hasMultipleTypes) {
+        // 복합 업종: 그라디언트 + 레이어 아이콘 마커
+        multiTypeColors = uniqueBusinessTypes.map(bt => {
+          const filter = BUSINESS_TYPE_FILTERS.find(f => f.key === bt)
+          return filter?.color || '#FF6B6B'
+        })
+        const svg = createMultiTypeMarkerSvg(multiTypeColors, merchantList.length)
+        const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)
+        markerImage = new kakao.maps.MarkerImage(
+          dataUrl,
+          new kakao.maps.Size(36, 36),
+          { offset: new kakao.maps.Point(18, 18) }
+        )
+      } else if (isMultiple) {
+        // 단일 업종이지만 복수 개: 숫자 뱃지 포함 마커
+        const svg = createSingleTypeMarkerWithBadgeSvg(markerColor, markerIconPath, merchantList.length)
+        const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)
+        markerImage = new kakao.maps.MarkerImage(
+          dataUrl,
+          new kakao.maps.Size(36, 36),
+          { offset: new kakao.maps.Point(18, 18) }
+        )
+      } else {
+        // 단일 업종, 단일 가맹점: 기존 마커
+        markerImage = getMarkerImage(primaryMerchant.business_type)
+      }
 
       const marker = new kakao.maps.Marker({
         position: position,
@@ -341,27 +621,58 @@ function App() {
         // 바텀시트에 표시할 가맹점 설정
         setSelectedMerchants(merchantList)
         setSelectedPosition(position)
-        // 선택된 마커 강조 오버레이 생성
-        createSelectedMarkerOverlay(position, markerColor, markerIconPath)
+        // 선택된 마커 강조 오버레이 생성 (복합 업종이면 첫 번째 색상 사용)
+        createSelectedMarkerOverlay(position, markerColor, hasMultipleTypes ? null : markerIconPath, hasMultipleTypes ? multiTypeColors : null)
       })
 
       markers.push(marker)
     })
 
-    // 마커 클러스터러 생성 (필터 색상 적용 - 테두리 스타일)
+    // 다중 필터 여부에 따라 클러스터러 생성
+    const isMultiFilter = selectedFilters.length > 1
+
+    // 다중 필터일 때 그라데이션 색상 생성
+    const getGradientColors = () => {
+      if (!isMultiFilter) return null
+      const colors = selectedFilters.map(filterKey => {
+        const filter = BUSINESS_TYPE_FILTERS.find(f => f.key === filterKey)
+        return filter?.color || '#FF6B6B'
+      })
+      return colors
+    }
+    const gradientColors = getGradientColors()
+
+    // 다중 필터용 클러스터 스타일 (그라데이션 보더 - 12시 방향에서 분할)
+    const multiFilterStyle = gradientColors ? {
+      width: '44px',
+      height: '44px',
+      background: `linear-gradient(white, white) padding-box, linear-gradient(90deg, ${gradientColors[0]} 0%, ${gradientColors[0]} 50%, ${gradientColors[1] || gradientColors[0]} 50%, ${gradientColors[1] || gradientColors[0]} 100%) border-box`,
+      borderRadius: '50%',
+      border: '3px solid transparent',
+      color: '#333',
+      textAlign: 'center',
+      fontWeight: 'bold',
+      lineHeight: '38px',
+      fontSize: '15px',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+    } : null
+
+    // 마커 클러스터러 생성
     const clusterer = new kakao.maps.MarkerClusterer({
       map: map,
       markers: markers,
       gridSize: 60,
       averageCenter: true,
       minLevel: 4,
-      styles: [{
+      disableClickZoom: false,
+      styles: isMultiFilter && multiFilterStyle ? [multiFilterStyle] : [{
+        // 단일 필터: 기존 스타일
         width: '44px',
         height: '44px',
         background: 'rgba(255, 255, 255, 0.95)',
         borderRadius: '50%',
-        border: `3px solid ${markerColor}`,
-        color: markerColor,
+        border: `3px solid ${primaryColor}`,
+        color: primaryColor,
         textAlign: 'center',
         fontWeight: 'bold',
         lineHeight: '38px',
@@ -371,7 +682,7 @@ function App() {
     })
     clustererRef.current = clusterer
     markersRef.current = markers
-  }, [merchantsByLocation, mapLoaded, currentFilter])
+  }, [merchantsByLocation, mapLoaded, currentFilter, selectedFilters])
 
   // 줌 인/아웃 핸들러
   const handleZoomIn = () => {
@@ -456,27 +767,46 @@ function App() {
           </div>
         </div>
 
-        {/* 업종 필터 버튼 (플로팅) */}
+        {/* 업종 필터 버튼 (플로팅) - 선택된 카테고리만 표시 */}
         <div className="filter-bar">
-          {BUSINESS_TYPE_FILTERS.map(filter => {
-            const isActive = selectedFilter === filter.key
+          {selectedFilters.map(filterKey => {
+            const filter = BUSINESS_TYPE_FILTERS.find(f => f.key === filterKey)
+            if (!filter) return null
             return (
               <button
                 key={filter.key}
-                className={`filter-btn ${isActive ? 'active' : ''}`}
+                className="filter-btn active"
                 style={{
                   '--filter-color': filter.color,
-                  backgroundColor: isActive ? filter.color : '#fff',
+                  backgroundColor: filter.color,
                   borderColor: filter.color,
-                  color: isActive ? '#fff' : filter.color,
+                  color: '#fff',
                 }}
-                onClick={() => setSelectedFilter(filter.key)}
+                onClick={() => handleFilterClick(filter.key)}
               >
                 <span className="filter-icon">{filter.icon}</span>
                 {filter.label}
+                {selectedFilters.length === 2 && (
+                  <span
+                    className="filter-remove"
+                    onClick={(e) => handleRemoveFilter(filter.key, e)}
+                  >
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                  </span>
+                )}
               </button>
             )
           })}
+          {/* + 더보기 버튼 */}
+          <button
+            className="filter-btn filter-more-btn"
+            onClick={openCategorySheet}
+          >
+            <span className="filter-more-icon">+</span>
+            더보기
+          </button>
         </div>
 
         <div ref={mapRef} className="map">
@@ -601,6 +931,67 @@ function App() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* 카테고리 선택 바텀시트 */}
+        {showCategorySheet && (
+          <div className="category-sheet-overlay" onClick={closeCategorySheet}>
+            <div className="category-sheet" onClick={(e) => e.stopPropagation()}>
+              <div className="category-sheet-header">
+                <h2 className="category-sheet-title">카테고리 선택</h2>
+                <p className="category-sheet-subtitle">최대 2개까지 선택할 수 있어요</p>
+                <button className="category-sheet-close" onClick={closeCategorySheet}>
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                  </svg>
+                </button>
+              </div>
+              <div className="category-sheet-grid">
+                {BUSINESS_TYPE_FILTERS.map(filter => {
+                  const isSelected = tempSelectedFilters.includes(filter.key)
+                  const count = merchants.filter(m => m.business_type === filter.key).length
+                  const isDisabled = !isSelected && tempSelectedFilters.length >= 2
+                  return (
+                    <button
+                      key={filter.key}
+                      className={`category-chip ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`}
+                      style={{
+                        '--chip-color': filter.color,
+                        borderColor: isSelected ? filter.color : '#e0e0e0',
+                        backgroundColor: isSelected ? `${filter.color}15` : '#fff',
+                      }}
+                      onClick={() => !isDisabled && toggleTempFilter(filter.key)}
+                      disabled={isDisabled}
+                    >
+                      <span
+                        className="category-chip-icon"
+                        style={{ color: filter.color }}
+                      >
+                        {filter.icon}
+                      </span>
+                      <span className="category-chip-label">{filter.label}</span>
+                      <span className="category-chip-count">{count.toLocaleString()}</span>
+                      {isSelected && (
+                        <span className="category-chip-check" style={{ color: filter.color }}>
+                          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                          </svg>
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+              <div className="category-sheet-footer">
+                <button className="category-sheet-reset" onClick={resetFilters}>
+                  초기화
+                </button>
+                <button className="category-sheet-apply" onClick={applyFilters}>
+                  {tempSelectedFilters.length}개 카테고리 적용
+                </button>
+              </div>
             </div>
           </div>
         )}
