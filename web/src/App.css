@@ -175,11 +175,12 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 14px;
+  height: 34px;
+  padding: 0 14px;
   border: 2px solid;
-  border-radius: 24px;
+  border-radius: 17px;
   background: #fff;
-  font-size: 0.85rem;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
@@ -413,10 +414,22 @@
 .bottom-sheet-multi {
 }
 
+.bottom-sheet-multi-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+}
+
+.bottom-sheet-multi-title .highlight {
+  color: #5B8DEF;
+}
+
 .bottom-sheet-address-header {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
   padding-bottom: 16px;
   margin-bottom: 12px;
   border-bottom: 1px solid #eee;
@@ -424,14 +437,13 @@
 
 .bottom-sheet-address-header svg {
   flex-shrink: 0;
-  margin-top: 2px;
 }
 
 .bottom-sheet-address-header span {
-  font-size: 0.95rem;
-  color: #555;
+  font-size: 0.9rem;
+  color: #888;
   line-height: 1.5;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .bottom-sheet-list {
@@ -457,10 +469,11 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 14px;
-  margin-bottom: 8px;
-  background: #fafafa;
-  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 10px;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #f0f0f0;
   transition: all 0.2s;
   width: 100%;
   box-sizing: border-box;
@@ -480,6 +493,17 @@
   justify-content: center;
 }
 
+.bottom-sheet-item-icon-rounded {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  border: 1px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .bottom-sheet-item-content {
   flex: 1;
   min-width: 0;
@@ -489,7 +513,7 @@
   font-size: 1rem;
   font-weight: 700;
   color: #333;
-  margin-bottom: 4px;
+  margin-top: 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -504,7 +528,7 @@
 
 .bottom-sheet-badge-small {
   display: inline-block;
-  padding: 2px 8px;
+  padding: 3px 8px;
   border-radius: 4px;
   font-size: 0.7rem;
   font-weight: 600;

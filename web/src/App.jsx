@@ -146,9 +146,9 @@ function App() {
       selectedOverlayRef.current.setMap(null)
       selectedOverlayRef.current = null
     }
-    // 숨겼던 원본 마커 복원
-    if (selectedMarkerRef.current && mapInstanceRef.current) {
-      selectedMarkerRef.current.setMap(mapInstanceRef.current)
+    // 숨겼던 원본 마커 복원 (클러스터러에 다시 추가)
+    if (selectedMarkerRef.current && clustererRef.current) {
+      clustererRef.current.addMarker(selectedMarkerRef.current)
       selectedMarkerRef.current = null
     }
   }
@@ -177,7 +177,7 @@ function App() {
               </filter>
             </defs>
             <path d="M24 0C10.745 0 0 10.745 0 24c0 18 24 36 24 36s24-18 24-36C48 10.745 37.255 0 24 0z" fill="${color}" filter="url(#pinShadow)"/>
-            <circle cx="24" cy="22" r="14" fill="white" opacity="0.95"/>
+            <circle cx="24" cy="22" r="17" fill="white" opacity="0.95"/>
             <g transform="translate(12, 10) scale(1)">
               <path d="${iconPath}" fill="${color}"/>
             </g>
@@ -220,9 +220,9 @@ function App() {
           selectedOverlayRef.current.setMap(null)
           selectedOverlayRef.current = null
         }
-        // 숨겼던 원본 마커 복원
-        if (selectedMarkerRef.current) {
-          selectedMarkerRef.current.setMap(map)
+        // 숨겼던 원본 마커 복원 (클러스터러에 다시 추가)
+        if (selectedMarkerRef.current && clustererRef.current) {
+          clustererRef.current.addMarker(selectedMarkerRef.current)
           selectedMarkerRef.current = null
         }
       })
@@ -289,11 +289,8 @@ function App() {
       selectedOverlayRef.current.setMap(null)
       selectedOverlayRef.current = null
     }
-    // 숨겼던 원본 마커 복원
-    if (selectedMarkerRef.current) {
-      selectedMarkerRef.current.setMap(map)
-      selectedMarkerRef.current = null
-    }
+    // 선택된 마커 참조 초기화 (클러스터러 전체가 재생성되므로 복원 불필요)
+    selectedMarkerRef.current = null
 
     // 기존 클러스터러 제거
     if (clustererRef.current) {
@@ -330,12 +327,14 @@ function App() {
 
       // 마커 클릭 이벤트 - 바텀시트 열기 + 선택 마커 강조
       kakao.maps.event.addListener(marker, 'click', () => {
-        // 이전에 숨겼던 마커 복원
-        if (selectedMarkerRef.current && selectedMarkerRef.current !== marker) {
-          selectedMarkerRef.current.setMap(map)
+        // 이전에 숨겼던 마커 복원 (클러스터러에 다시 추가)
+        if (selectedMarkerRef.current && selectedMarkerRef.current !== marker && clustererRef.current) {
+          clustererRef.current.addMarker(selectedMarkerRef.current)
         }
-        // 현재 마커 숨기기
-        marker.setMap(null)
+        // 현재 마커 숨기기 (클러스터러에서 제거)
+        if (clustererRef.current) {
+          clustererRef.current.removeMarker(marker)
+        }
         selectedMarkerRef.current = marker
         // 지도 중앙으로 이동 (부드럽게)
         map.panTo(position)
@@ -556,8 +555,11 @@ function App() {
               ) : (
                 // 다중 가맹점
                 <div className="bottom-sheet-multi">
+                  <h2 className="bottom-sheet-multi-title">
+                    이 건물에 <span className="highlight">{selectedMerchants.length}개</span>의 가맹점이 있어요
+                  </h2>
                   <div className="bottom-sheet-address-header">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="#FF6B6B">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="#999">
                       <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                     </svg>
                     <span>{selectedMerchants[0].address}</span>
@@ -572,16 +574,15 @@ function App() {
                           onClick={() => merchant.place_url && window.open(merchant.place_url, '_blank')}
                         >
                           <div
-                            className="bottom-sheet-item-icon"
-                            style={{ backgroundColor: categoryColor }}
+                            className="bottom-sheet-item-icon-rounded"
+                            style={{ backgroundColor: `${categoryColor}15`, borderColor: `${categoryColor}30` }}
                             dangerouslySetInnerHTML={{
-                              __html: `<svg viewBox="0 0 24 24" width="18" height="18" fill="white">
+                              __html: `<svg viewBox="0 0 24 24" width="22" height="22" fill="${categoryColor}">
                                 <path d="${BUSINESS_TYPE_FILTERS.find(f => f.key === merchant.business_type)?.iconPath || ''}"/>
                               </svg>`
                             }}
                           />
                           <div className="bottom-sheet-item-content">
-                            <div className="bottom-sheet-item-title">{merchant.name}</div>
                             <div className="bottom-sheet-item-meta">
                               <span
                                 className="bottom-sheet-badge-small"
@@ -591,6 +592,7 @@ function App() {
                               </span>
                               <span className="bottom-sheet-item-category">· {merchant.category}</span>
                             </div>
+                            <div className="bottom-sheet-item-title">{merchant.name}</div>
                           </div>
                           {merchant.place_url && <span className="bottom-sheet-item-arrow">›</span>}
                         </div>
