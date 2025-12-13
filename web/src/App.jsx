@@ -467,7 +467,12 @@ function App() {
 
         {/* 데이터 상태 표시 (우측 상단) */}
         <div className={`data-status ${source || ''}`}>
-          {formattedLastUpdated && `${formattedLastUpdated} 기준`}
+          <div className="data-status-row">
+            <span className="data-status-date">{formattedLastUpdated && `${formattedLastUpdated} 기준`}</span>
+          </div>
+          <div className="data-status-row">
+            <span className="data-status-count">전체 {merchants.length.toLocaleString()}개</span>
+          </div>
         </div>
 
         {/* 업종 필터 버튼 (플로팅) */}
