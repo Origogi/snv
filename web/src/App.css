@@ -223,92 +223,287 @@
   min-height: 0;
 }
 
-/* 커스텀 오버레이 스타일 */
-.customoverlay {
+/* 선택된 마커 강조 스타일 */
+.selected-marker-container {
   position: relative;
-  bottom: 50px;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.customoverlay::after {
-  content: '';
+.selected-marker-pulse {
   position: absolute;
-  left: 50%;
-  bottom: -10px;
-  transform: translateX(-50%);
-  border-left: 10px solid transparent;
-  border-right: 10px solid transparent;
-  border-top: 10px solid #fff;
-}
-
-.overlay-info {
-  width: 320px;
-  padding: 18px;
-  position: relative;
-}
-
-/* 단일 아이템 오버레이 */
-.overlay-single {
-  padding-top: 18px;
-}
-
-.overlay-close {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 28px;
-  height: 28px;
-  cursor: pointer;
+  bottom: 0;
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 107, 107, 0.3);
   border-radius: 50%;
-  transition: background 0.2s;
-  z-index: 10;
+  animation: pulse 1.5s ease-out infinite;
 }
 
-.overlay-close:hover {
-  background: rgba(0, 0, 0, 0.05);
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(3);
+    opacity: 0;
+  }
 }
 
-.overlay-close::before,
-.overlay-close::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 12px;
-  height: 2px;
-  background: #bbb;
-  border-radius: 1px;
+.selected-marker-pin {
+  animation: bounce 0.6s ease-in-out infinite alternate;
+  transform-origin: bottom center;
+}
+
+@keyframes bounce {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-8px);
+  }
+}
+
+/* 바텀시트 스타일 */
+.bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 500;
   pointer-events: none;
 }
 
-.overlay-close::before {
-  transform: translate(-50%, -50%) rotate(45deg);
+.bottom-sheet.open {
+  pointer-events: auto;
 }
 
-.overlay-close::after {
-  transform: translate(-50%, -50%) rotate(-45deg);
+.bottom-sheet-content {
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  padding: 24px;
+  padding-top: 20px;
+  position: relative;
+  animation: slideUp 0.3s ease-out;
 }
 
-.overlay-close:hover::before,
-.overlay-close:hover::after {
-  background: #666;
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
-/* 카테고리 뱃지 */
-.overlay-badge {
+.bottom-sheet-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: #f5f5f5;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.bottom-sheet-close:hover {
+  background: #eee;
+  color: #333;
+}
+
+/* 단일 가맹점 바텀시트 */
+.bottom-sheet-single {
+}
+
+.bottom-sheet-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.bottom-sheet-badge {
   display: inline-block;
   padding: 4px 10px;
   border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 600;
   color: #fff;
-  margin-bottom: 12px;
 }
 
-.overlay-badge-small {
+.bottom-sheet-category {
+  font-size: 0.85rem;
+  color: #888;
+  font-weight: 500;
+}
+
+.bottom-sheet-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+}
+
+.bottom-sheet-address {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 14px 16px;
+  background: #f8f8f8;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.bottom-sheet-address svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.bottom-sheet-address span {
+  font-size: 0.9rem;
+  color: #666;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.bottom-sheet-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  color: #fff;
+  padding: 14px 20px;
+  border-radius: 14px;
+  border: none;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.bottom-sheet-link:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.bottom-sheet-no-link {
+  display: block;
+  width: 100%;
+  font-size: 0.9rem;
+  color: #999;
+  text-align: center;
+  padding: 12px 0;
+}
+
+/* 다중 가맹점 바텀시트 */
+.bottom-sheet-multi {
+}
+
+.bottom-sheet-address-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding-bottom: 16px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.bottom-sheet-address-header svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.bottom-sheet-address-header span {
+  font-size: 0.95rem;
+  color: #555;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.bottom-sheet-list {
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.bottom-sheet-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.bottom-sheet-list::-webkit-scrollbar-track {
+  background: #f5f5f5;
+  border-radius: 2px;
+}
+
+.bottom-sheet-list::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 2px;
+}
+
+.bottom-sheet-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  margin-bottom: 8px;
+  background: #fafafa;
+  border-radius: 14px;
+  transition: all 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.bottom-sheet-item:last-child {
+  margin-bottom: 0;
+}
+
+.bottom-sheet-item-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bottom-sheet-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.bottom-sheet-item-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bottom-sheet-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+}
+
+.bottom-sheet-badge-small {
   display: inline-block;
   padding: 2px 8px;
   border-radius: 4px;
@@ -317,94 +512,45 @@
   color: #fff;
 }
 
-.overlay-title {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: #333;
-  margin: 0 0 6px 0;
-  padding-right: 30px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.4;
-}
-
-.overlay-meta {
-  font-size: 0.85rem;
+.bottom-sheet-item-category {
   color: #888;
-  margin: 0 0 14px 0;
   font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 6px;
 }
 
-.overlay-category {
-  color: #888;
-}
-
-/* 주소 영역 */
-.overlay-address-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  padding: 12px 14px;
-  background: #f8f8f8;
-  border-radius: 10px;
-  margin-bottom: 14px;
-}
-
-.overlay-address-icon {
+.bottom-sheet-item-arrow {
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  margin-top: 2px;
+  font-size: 1.5rem;
+  color: #ccc;
+  font-weight: 300;
 }
 
-.overlay-address {
-  font-size: 0.85rem;
-  color: #666;
-  line-height: 1.5;
-  font-weight: 500;
-  margin: 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* 링크 버튼 */
-.overlay-link {
-  display: block;
-  width: 100%;
-  color: #fff !important;
-  padding: 12px 16px;
-  border-radius: 12px;
-  border: none;
-  text-decoration: none !important;
-  font-weight: 600;
-  font-size: 0.95rem;
+.bottom-sheet-item.clickable {
   cursor: pointer;
-  transition: all 0.2s;
-  text-align: center;
-  box-sizing: border-box;
 }
 
-.overlay-link:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
+.bottom-sheet-item.clickable:hover {
+  background: #fff5f5;
+  border-color: #ffcdd2;
 }
 
-.overlay-no-link {
-  display: block;
-  width: 100%;
-  font-size: 0.85rem;
-  color: #999;
-  text-align: center;
-  padding: 10px 0;
+.bottom-sheet-item.clickable:hover .bottom-sheet-item-arrow {
+  color: #ff6b6b;
+}
+
+/* 태블릿/PC 바텀시트 (가운데 정렬 카드 형태) */
+@media (min-width: 768px) {
+  .bottom-sheet {
+    display: flex;
+    justify-content: center;
+    padding: 0 20px 20px;
+  }
+
+  .bottom-sheet-content {
+    max-width: 420px;
+    width: 100%;
+    border-radius: 20px;
+    margin-bottom: env(safe-area-inset-bottom, 0);
+  }
 }
 
 .loading {
@@ -414,136 +560,6 @@
   height: 100%;
   font-size: 1.2rem;
   color: #666;
-}
-
-/* 다중 가맹점 오버레이 스타일 */
-.customoverlay-multi {
-  max-width: 340px;
-}
-
-.overlay-info-multi {
-  width: 320px;
-  padding: 16px;
-  padding-top: 40px;
-}
-
-/* 주소 헤더 */
-.overlay-address-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  padding-bottom: 14px;
-  margin-bottom: 10px;
-  border-bottom: 1px solid #eee;
-}
-
-.overlay-address-header .overlay-address {
-  font-size: 0.9rem;
-  color: #555;
-  line-height: 1.5;
-  font-weight: 500;
-}
-
-.overlay-list {
-  margin: 0 -4px;
-  padding: 0 4px;
-}
-
-.overlay-list::-webkit-scrollbar {
-  width: 4px;
-}
-
-.overlay-list::-webkit-scrollbar-track {
-  background: #f5f5f5;
-  border-radius: 2px;
-}
-
-.overlay-list::-webkit-scrollbar-thumb {
-  background: #ccc;
-  border-radius: 2px;
-}
-
-.overlay-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  margin-bottom: 8px;
-  background: #fff;
-  border-radius: 12px;
-  transition: all 0.2s;
-  border: 1px solid #f0f0f0;
-}
-
-.overlay-item:last-child {
-  margin-bottom: 0;
-}
-
-.overlay-item-icon {
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.overlay-item-icon svg {
-  width: 36px;
-  height: 36px;
-}
-
-.overlay-item-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.overlay-item-arrow {
-  flex-shrink: 0;
-  font-size: 1.4rem;
-  color: #ccc;
-  font-weight: 300;
-}
-
-.overlay-item.clickable {
-  cursor: pointer;
-}
-
-.overlay-item.clickable:hover {
-  background: #fff5f5;
-  border-color: #ffcdd2;
-}
-
-.overlay-item.clickable:hover .overlay-item-arrow {
-  color: #ff6b6b;
-}
-
-.overlay-item:not(.clickable):hover {
-  background: #fafafa;
-}
-
-.overlay-item .overlay-title {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #333;
-  margin: 0 0 4px 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.4;
-  padding-right: 0;
-}
-
-.overlay-item .overlay-meta {
-  font-size: 0.75rem;
-  color: #888;
-  margin: 0;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 4px;
 }
 
 /* 지도 컨트롤 */

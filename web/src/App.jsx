@@ -52,6 +52,18 @@ const BUSINESS_TYPE_FILTERS = [
       </svg>
     )
   },
+  {
+    key: '제과점/커피',
+    label: '제과점/커피',
+    color: '#795548',
+    // 커피컵 아이콘 path (viewBox 0 0 24 24 기준)
+    iconPath: 'M2 21h18v-2H2v2zm2-3h14c1.1 0 2-.9 2-2V5h2V3H2v2h2v11c0 1.1.9 2 2 2zm2-5V5h10v8H6zm10.5-4c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z',
+    icon: (
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+        <path d="M2 21h18v-2H2v2zm2-3h14c1.1 0 2-.9 2-2V5h2V3H2v2h2v11c0 1.1.9 2 2 2zm2-5V5h10v8H6zm10.5-4c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z"/>
+      </svg>
+    )
+  },
 ]
 
 // 카테고리별 색상 조회 헬퍼
@@ -79,11 +91,14 @@ const getCategoryIconSvg = (businessType) => {
 function App() {
   const mapRef = useRef(null)
   const mapInstanceRef = useRef(null)
-  const overlayRef = useRef(null)
   const clustererRef = useRef(null)
   const markersRef = useRef([])
+  const selectedOverlayRef = useRef(null) // 선택된 마커 강조 오버레이
+  const selectedMarkerRef = useRef(null) // 선택된 원본 마커 (숨김용)
   const [mapLoaded, setMapLoaded] = useState(false)
   const [selectedFilter, setSelectedFilter] = useState('음식점')
+  const [selectedMerchants, setSelectedMerchants] = useState(null) // 바텀시트용 선택된 가맹점
+  const [selectedPosition, setSelectedPosition] = useState(null) // 선택된 마커 위치
 
   // Supabase + IndexedDB 캐시로 데이터 로드
   const { merchants, loading, source, message, lastUpdatedAt } = useMerchants()
@@ -122,79 +137,61 @@ function App() {
     return locationMap
   }, [filteredMerchants])
 
-  // 단일 가맹점 오버레이
-  const createSingleOverlayContent = (merchant) => {
-    const placeUrl = merchant.place_url || ''
-    const categoryColor = getCategoryColor(merchant.business_type)
-    return `
-      <div class="customoverlay">
-        <div class="overlay-info overlay-single">
-          <span class="overlay-close" id="closeBtn"></span>
-          <span class="overlay-badge" style="background-color: ${categoryColor}">${merchant.business_type}</span>
-          <div class="overlay-title">${merchant.name}</div>
-          <div class="overlay-meta">${merchant.category}</div>
-          <div class="overlay-address-row">
-            <span class="overlay-address-icon">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="#999">
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-              </svg>
-            </span>
-            <span class="overlay-address">${merchant.address}</span>
-          </div>
-          ${placeUrl ?
-            `<a href="${placeUrl}" target="_blank" class="overlay-link" style="background: linear-gradient(135deg, ${categoryColor}, ${categoryColor}dd)">매장 상세보기 →</a>` :
-            '<span class="overlay-no-link">상세정보 없음</span>'
-          }
-        </div>
-      </div>
-    `
+  // 바텀시트 닫기
+  const closeBottomSheet = () => {
+    setSelectedMerchants(null)
+    setSelectedPosition(null)
+    // 선택 마커 오버레이 제거
+    if (selectedOverlayRef.current) {
+      selectedOverlayRef.current.setMap(null)
+      selectedOverlayRef.current = null
+    }
+    // 숨겼던 원본 마커 복원
+    if (selectedMarkerRef.current && mapInstanceRef.current) {
+      selectedMarkerRef.current.setMap(mapInstanceRef.current)
+      selectedMarkerRef.current = null
+    }
   }
 
-  // 다중 가맹점 오버레이 (동일 위치에 여러 가맹점)
-  const createMultiOverlayContent = (merchantList) => {
-    const itemsHtml = merchantList.map((merchant, index) => {
-      const placeUrl = merchant.place_url || ''
-      const hasLink = placeUrl ? 'true' : 'false'
-      const categoryColor = getCategoryColor(merchant.business_type)
-      const iconSvg = getCategoryIconSvg(merchant.business_type)
-      return `
-        <div class="overlay-item ${placeUrl ? 'clickable' : ''}" data-index="${index}" data-url="${placeUrl}" data-has-link="${hasLink}">
-          <div class="overlay-item-icon">${iconSvg}</div>
-          <div class="overlay-item-content">
-            <div class="overlay-title">${merchant.name}</div>
-            <div class="overlay-meta">
-              <span class="overlay-badge-small" style="background-color: ${categoryColor}">${merchant.business_type}</span>
-              <span class="overlay-category">· ${merchant.category}</span>
-            </div>
-          </div>
-          ${placeUrl ? '<span class="overlay-item-arrow">›</span>' : ''}
-        </div>
-      `
-    }).join('')
+  // 선택된 마커 강조 오버레이 생성
+  const createSelectedMarkerOverlay = (position, color, iconPath) => {
+    const { kakao } = window
+    if (!kakao || !kakao.maps || !mapInstanceRef.current) return
 
-    // 아이템 개수가 5개 초과일 때만 스크롤 적용
-    const maxItems = 5
-    const needsScroll = merchantList.length > maxItems
-    const scrollStyle = needsScroll ? 'max-height: 320px; overflow-y: auto;' : ''
+    // 기존 오버레이 제거
+    if (selectedOverlayRef.current) {
+      selectedOverlayRef.current.setMap(null)
+    }
 
-    return `
-      <div class="customoverlay customoverlay-multi">
-        <div class="overlay-info overlay-info-multi">
-          <span class="overlay-close" id="closeBtn"></span>
-          <div class="overlay-address-header">
-            <span class="overlay-address-icon">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="#FF6B6B">
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-              </svg>
-            </span>
-            <span class="overlay-address">${merchantList[0].address}</span>
-          </div>
-          <div class="overlay-list" style="${scrollStyle}">
-            ${itemsHtml}
-          </div>
+    // 핀 모양 마커 SVG (애니메이션 포함)
+    const content = `
+      <div class="selected-marker-container">
+        <div class="selected-marker-pulse"></div>
+        <div class="selected-marker-pin">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="60" viewBox="0 0 48 60">
+            <defs>
+              <filter id="pinShadow" x="-50%" y="-20%" width="200%" height="150%">
+                <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.3"/>
+              </filter>
+            </defs>
+            <path d="M24 0C10.745 0 0 10.745 0 24c0 18 24 36 24 36s24-18 24-36C48 10.745 37.255 0 24 0z" fill="${color}" filter="url(#pinShadow)"/>
+            <circle cx="24" cy="22" r="14" fill="white" opacity="0.95"/>
+            <g transform="translate(12, 10) scale(1)">
+              <path d="${iconPath}" fill="${color}"/>
+            </g>
+          </svg>
         </div>
       </div>
     `
+
+    const overlay = new kakao.maps.CustomOverlay({
+      content: content,
+      position: position,
+      yAnchor: 1,
+      zIndex: 100
+    })
+    overlay.setMap(mapInstanceRef.current)
+    selectedOverlayRef.current = overlay
   }
 
   // 지도 초기화 (최초 1회)
@@ -213,10 +210,18 @@ function App() {
       })
       mapInstanceRef.current = map
 
-      // 지도 클릭 시 오버레이 닫기
+      // 지도 클릭 시 바텀시트 닫기
       kakao.maps.event.addListener(map, 'click', () => {
-        if (overlayRef.current) {
-          overlayRef.current.setMap(null)
+        setSelectedMerchants(null)
+        setSelectedPosition(null)
+        if (selectedOverlayRef.current) {
+          selectedOverlayRef.current.setMap(null)
+          selectedOverlayRef.current = null
+        }
+        // 숨겼던 원본 마커 복원
+        if (selectedMarkerRef.current) {
+          selectedMarkerRef.current.setMap(map)
+          selectedMarkerRef.current = null
         }
       })
 
@@ -275,10 +280,17 @@ function App() {
 
     const map = mapInstanceRef.current
 
-    // 기존 오버레이 닫기
-    if (overlayRef.current) {
-      overlayRef.current.setMap(null)
-      overlayRef.current = null
+    // 바텀시트 및 선택 오버레이 닫기
+    setSelectedMerchants(null)
+    setSelectedPosition(null)
+    if (selectedOverlayRef.current) {
+      selectedOverlayRef.current.setMap(null)
+      selectedOverlayRef.current = null
+    }
+    // 숨겼던 원본 마커 복원
+    if (selectedMarkerRef.current) {
+      selectedMarkerRef.current.setMap(map)
+      selectedMarkerRef.current = null
     }
 
     // 기존 클러스터러 제거
@@ -314,54 +326,22 @@ function App() {
         image: markerImage
       })
 
-      // 마커 클릭 이벤트
+      // 마커 클릭 이벤트 - 바텀시트 열기 + 선택 마커 강조
       kakao.maps.event.addListener(marker, 'click', () => {
-        // 기존 오버레이 닫기
-        if (overlayRef.current) {
-          overlayRef.current.setMap(null)
+        // 이전에 숨겼던 마커 복원
+        if (selectedMarkerRef.current && selectedMarkerRef.current !== marker) {
+          selectedMarkerRef.current.setMap(map)
         }
-
+        // 현재 마커 숨기기
+        marker.setMap(null)
+        selectedMarkerRef.current = marker
         // 지도 중앙으로 이동 (부드럽게)
         map.panTo(position)
-
-        // 커스텀 오버레이 생성 (단일 vs 다중)
-        const content = isMultiple
-          ? createMultiOverlayContent(merchantList)
-          : createSingleOverlayContent(merchantList[0])
-
-        const overlay = new kakao.maps.CustomOverlay({
-          content: content,
-          position: position,
-          yAnchor: 1,
-          clickable: true
-        })
-        overlay.setMap(map)
-        overlayRef.current = overlay
-
-        // 이벤트 등록
-        setTimeout(() => {
-          // 닫기 버튼
-          const closeBtn = document.getElementById('closeBtn')
-          if (closeBtn) {
-            closeBtn.onclick = () => {
-              overlay.setMap(null)
-              overlayRef.current = null
-            }
-          }
-
-          // 다중 오버레이 아이템 클릭 이벤트
-          if (isMultiple) {
-            const items = document.querySelectorAll('.overlay-item')
-            items.forEach(item => {
-              item.onclick = () => {
-                const url = item.dataset.url
-                if (url) {
-                  window.open(url, '_blank')
-                }
-              }
-            })
-          }
-        }, 0)
+        // 바텀시트에 표시할 가맹점 설정
+        setSelectedMerchants(merchantList)
+        setSelectedPosition(position)
+        // 선택된 마커 강조 오버레이 생성
+        createSelectedMarkerOverlay(position, markerColor, markerIconPath)
       })
 
       markers.push(marker)
@@ -519,6 +499,104 @@ function App() {
               <button className="control-btn zoom-btn" onClick={handleZoomOut} title="축소">
                 −
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* 바텀시트 */}
+        {selectedMerchants && (
+          <div className={`bottom-sheet ${selectedMerchants ? 'open' : ''}`}>
+            <div className="bottom-sheet-content">
+              <button className="bottom-sheet-close" onClick={closeBottomSheet}>
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+              </button>
+
+              {selectedMerchants.length === 1 ? (
+                // 단일 가맹점
+                <div className="bottom-sheet-single">
+                  <div className="bottom-sheet-header">
+                    <span
+                      className="bottom-sheet-badge"
+                      style={{ backgroundColor: getCategoryColor(selectedMerchants[0].business_type) }}
+                    >
+                      {selectedMerchants[0].business_type}
+                    </span>
+                    <span className="bottom-sheet-category">{selectedMerchants[0].category}</span>
+                  </div>
+                  <h2 className="bottom-sheet-title">{selectedMerchants[0].name}</h2>
+                  <div className="bottom-sheet-address">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="#999">
+                      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                    </svg>
+                    <span>{selectedMerchants[0].address}</span>
+                  </div>
+                  {selectedMerchants[0].place_url ? (
+                    <a
+                      href={selectedMerchants[0].place_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bottom-sheet-link"
+                      style={{
+                        background: `linear-gradient(135deg, ${getCategoryColor(selectedMerchants[0].business_type)}, ${getCategoryColor(selectedMerchants[0].business_type)}dd)`
+                      }}
+                    >
+                      매장 상세정보 확인
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                        <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+                      </svg>
+                    </a>
+                  ) : (
+                    <span className="bottom-sheet-no-link">상세정보 없음</span>
+                  )}
+                </div>
+              ) : (
+                // 다중 가맹점
+                <div className="bottom-sheet-multi">
+                  <div className="bottom-sheet-address-header">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="#FF6B6B">
+                      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                    </svg>
+                    <span>{selectedMerchants[0].address}</span>
+                  </div>
+                  <div className="bottom-sheet-list">
+                    {selectedMerchants.map((merchant, index) => {
+                      const categoryColor = getCategoryColor(merchant.business_type)
+                      return (
+                        <div
+                          key={index}
+                          className={`bottom-sheet-item ${merchant.place_url ? 'clickable' : ''}`}
+                          onClick={() => merchant.place_url && window.open(merchant.place_url, '_blank')}
+                        >
+                          <div
+                            className="bottom-sheet-item-icon"
+                            style={{ backgroundColor: categoryColor }}
+                            dangerouslySetInnerHTML={{
+                              __html: `<svg viewBox="0 0 24 24" width="18" height="18" fill="white">
+                                <path d="${BUSINESS_TYPE_FILTERS.find(f => f.key === merchant.business_type)?.iconPath || ''}"/>
+                              </svg>`
+                            }}
+                          />
+                          <div className="bottom-sheet-item-content">
+                            <div className="bottom-sheet-item-title">{merchant.name}</div>
+                            <div className="bottom-sheet-item-meta">
+                              <span
+                                className="bottom-sheet-badge-small"
+                                style={{ backgroundColor: categoryColor }}
+                              >
+                                {merchant.business_type}
+                              </span>
+                              <span className="bottom-sheet-item-category">· {merchant.category}</span>
+                            </div>
+                          </div>
+                          {merchant.place_url && <span className="bottom-sheet-item-arrow">›</span>}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
