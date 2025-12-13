@@ -164,9 +164,11 @@ function App() {
     }
 
     // 핀 모양 마커 SVG (애니메이션 포함)
+    // color를 50% 투명도로 변환 (pulse 배경용)
+    const pulseColor = color + '80' // hex color + 50% alpha
     const content = `
       <div class="selected-marker-container">
-        <div class="selected-marker-pulse"></div>
+        <div class="selected-marker-pulse" style="background: ${pulseColor};"></div>
         <div class="selected-marker-pin">
           <svg xmlns="http://www.w3.org/2000/svg" width="48" height="60" viewBox="0 0 48 60">
             <defs>
