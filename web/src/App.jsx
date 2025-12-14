@@ -78,6 +78,9 @@ const BUSINESS_TYPE_FILTERS = [
   },
 ]
 
+// 브랜드 컬러 (복합 카테고리용)
+const BRAND_COLOR = '#FF9F40'
+
 // 카테고리별 색상 조회 헬퍼
 const getCategoryColor = (businessType) => {
   const filter = BUSINESS_TYPE_FILTERS.find(f => f.key === businessType)
@@ -100,64 +103,25 @@ const getCategoryIconSvg = (businessType) => {
   `
 }
 
-// 도넛 클러스터 SVG 생성 (다중 필터용)
-const createDonutClusterSvg = (categoryData, total) => {
+// 복합 카테고리 클러스터 SVG 생성 (브랜드 컬러 사용)
+const createMixedClusterSvg = (total) => {
   const size = 52
   const center = size / 2
   const radius = 20
   const strokeWidth = 6
-  const circumference = 2 * Math.PI * radius
-
-  // 고유 ID 생성 (필터 충돌 방지)
   const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-
-  // 카테고리별 도넛 세그먼트 생성
-  let currentOffset = 0
-  const segments = categoryData.map(({ color, count }) => {
-    const ratio = count / total
-    const dashLength = circumference * ratio
-    const dashOffset = circumference - currentOffset
-    currentOffset += dashLength
-
-    return `<circle
-      cx="${center}"
-      cy="${center}"
-      r="${radius}"
-      fill="none"
-      stroke="${color}"
-      stroke-width="${strokeWidth}"
-      stroke-dasharray="${dashLength} ${circumference - dashLength}"
-      stroke-dashoffset="${dashOffset}"
-      transform="rotate(-90 ${center} ${center})"
-    />`
-  }).join('')
-
-  // 그라데이션 정의 (선택된 카테고리 색상들로)
-  const gradientStops = categoryData.map((item, idx) => {
-    const offset = (idx / (categoryData.length - 1 || 1)) * 100
-    return `<stop offset="${offset}%" stop-color="${item.color}"/>`
-  }).join('')
-
-  const gradientId = `grad-${uniqueId}`
-  const shadowId = `donutShadow-${uniqueId}`
+  const shadowId = `mixedClusterShadow-${uniqueId}`
 
   return `
     <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
       <defs>
-        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="0%">
-          ${gradientStops}
-        </linearGradient>
         <filter id="${shadowId}" x="-30%" y="-30%" width="160%" height="160%">
           <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.15"/>
         </filter>
       </defs>
-      <!-- 배경 원 (흰색) -->
       <circle cx="${center}" cy="${center}" r="${radius + strokeWidth/2 + 2}" fill="white" filter="url(#${shadowId})"/>
-      <!-- 도넛 세그먼트 -->
-      ${segments}
-      <!-- 중앙 흰색 원 -->
+      <circle cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="${BRAND_COLOR}" stroke-width="${strokeWidth}"/>
       <circle cx="${center}" cy="${center}" r="${radius - strokeWidth/2 - 1}" fill="white"/>
-      <!-- 숫자 텍스트 (그라데이션) -->
       <text
         x="${center}"
         y="${center}"
@@ -166,7 +130,7 @@ const createDonutClusterSvg = (categoryData, total) => {
         font-family="'Noto Sans KR', sans-serif"
         font-size="${total >= 1000 ? 11 : total >= 100 ? 13 : 15}"
         font-weight="bold"
-        fill="url(#${gradientId})"
+        fill="${BRAND_COLOR}"
       >${total >= 1000 ? Math.floor(total/1000) + 'k' : total}</text>
     </svg>
   `
@@ -205,38 +169,26 @@ const createSingleClusterSvg = (color, total) => {
   `
 }
 
-// 복합 마커 SVG 생성 (같은 위치에 여러 업종이 있을 때)
-const createMultiTypeMarkerSvg = (colors, count) => {
+// 복합 마커 SVG 생성 (같은 위치에 여러 업종이 있을 때) - 브랜드 컬러 + 스타 아이콘
+const createMultiTypeMarkerSvg = (count) => {
   const size = 36
   const center = size / 2
   const radius = center - 2
+  const uniqueId = `multi-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`
 
-  // 레이어/스택 아이콘 path (여러 개 겹침을 표현)
-  const layerIconPath = 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'
-
-  // 그라디언트 ID 생성
-  const gradientId = `multi-grad-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-
-  // 부드러운 그라디언트 (위에서 아래로)
-  const gradientStops = colors.length === 2
-    ? `<stop offset="0%" stop-color="${colors[0]}"/>
-       <stop offset="100%" stop-color="${colors[1]}"/>`
-    : `<stop offset="0%" stop-color="${colors[0]}"/>
-       <stop offset="100%" stop-color="${colors[colors.length - 1] || colors[0]}"/>`
+  // 스타 아이콘 path (다양한 혜택이 모여 있는 핫스팟)
+  const starIconPath = 'M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z'
 
   return `
     <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
       <defs>
-        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="100%">
-          ${gradientStops}
-        </linearGradient>
-        <filter id="multiShadow" x="-30%" y="-30%" width="160%" height="160%">
+        <filter id="multiShadow-${uniqueId}" x="-30%" y="-30%" width="160%" height="160%">
           <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.25"/>
         </filter>
       </defs>
-      <circle cx="${center}" cy="${center}" r="${radius}" fill="url(#${gradientId})" filter="url(#multiShadow)"/>
-      <g transform="translate(${center - 10}, ${center - 10}) scale(0.83)">
-        <path d="${layerIconPath}" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="${center}" cy="${center}" r="${radius}" fill="${BRAND_COLOR}" filter="url(#multiShadow-${uniqueId})"/>
+      <g transform="translate(${center - 9}, ${center - 9}) scale(0.75)">
+        <path d="${starIconPath}" fill="white"/>
       </g>
       <circle cx="${size - 8}" cy="${size - 8}" r="8" fill="white" stroke="none"/>
       <text x="${size - 8}" y="${size - 8}" text-anchor="middle" dominant-baseline="central" font-family="'Noto Sans KR', sans-serif" font-size="10" font-weight="bold" fill="#333">${count}</text>
@@ -406,7 +358,7 @@ function App() {
   }
 
   // 선택된 마커 강조 오버레이 생성
-  const createSelectedMarkerOverlay = (position, color, iconPath, multiTypeColors = null) => {
+  const createSelectedMarkerOverlay = (position, color, iconPath, isMultiType = false) => {
     const { kakao } = window
     if (!kakao || !kakao.maps || !mapInstanceRef.current) return
 
@@ -415,30 +367,17 @@ function App() {
       selectedOverlayRef.current.setMap(null)
     }
 
-    // 복합 업종 마커용 그라디언트 ID
-    const gradientId = `pin-grad-${Date.now()}`
+    // 복합 업종이면 브랜드 컬러 사용
+    const pinColor = isMultiType ? BRAND_COLOR : color
+    const pulseColor = pinColor + '80' // 50% alpha
 
-    // 핀 모양 마커 SVG (애니메이션 포함)
-    // color를 50% 투명도로 변환 (pulse 배경용)
-    const pulseColor = (multiTypeColors ? multiTypeColors[0] : color) + '80' // hex color + 50% alpha
+    // 스타 아이콘 (복합 업종용)
+    const starIconPath = 'M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z'
 
-    // 복합 업종일 때 그라디언트 정의 (사선 그라디언트)
-    const gradientDef = multiTypeColors && multiTypeColors.length > 1 ? `
-      <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="${multiTypeColors[0]}"/>
-        <stop offset="100%" stop-color="${multiTypeColors[1]}"/>
-      </linearGradient>
-    ` : ''
-
-    const fillColor = multiTypeColors && multiTypeColors.length > 1 ? `url(#${gradientId})` : color
-
-    // 레이어 아이콘 (복합 업종용)
-    const layerIconPath = 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'
-
-    // 아이콘 부분: 복합 업종이면 레이어 아이콘, 아니면 기존 카테고리 아이콘
-    const iconContent = multiTypeColors ? `
+    // 아이콘 부분: 복합 업종이면 스타 아이콘, 아니면 기존 카테고리 아이콘
+    const iconContent = isMultiType ? `
       <g transform="translate(12, 10) scale(1)">
-        <path d="${layerIconPath}" fill="none" stroke="${multiTypeColors[0]}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="${starIconPath}" fill="${BRAND_COLOR}"/>
       </g>
     ` : `
       <g transform="translate(12, 10) scale(1)">
@@ -455,9 +394,8 @@ function App() {
               <filter id="pinShadow" x="-50%" y="-20%" width="200%" height="150%">
                 <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.3"/>
               </filter>
-              ${gradientDef}
             </defs>
-            <path d="M24 0C10.745 0 0 10.745 0 24c0 18 24 36 24 36s24-18 24-36C48 10.745 37.255 0 24 0z" fill="${fillColor}" filter="url(#pinShadow)"/>
+            <path d="M24 0C10.745 0 0 10.745 0 24c0 18 24 36 24 36s24-18 24-36C48 10.745 37.255 0 24 0z" fill="${pinColor}" filter="url(#pinShadow)"/>
             <circle cx="24" cy="22" r="17" fill="white" opacity="0.95"/>
             ${iconContent}
           </svg>
@@ -620,15 +558,10 @@ function App() {
 
       // 마커 이미지 결정: 복합 업종이면 복합 마커, 아니면 기존 마커
       let markerImage
-      let multiTypeColors = null
 
       if (hasMultipleTypes) {
-        // 복합 업종: 그라디언트 + 레이어 아이콘 마커
-        multiTypeColors = uniqueBusinessTypes.map(bt => {
-          const filter = BUSINESS_TYPE_FILTERS.find(f => f.key === bt)
-          return filter?.color || '#FF6B6B'
-        })
-        const svg = createMultiTypeMarkerSvg(multiTypeColors, merchantList.length)
+        // 복합 업종: 브랜드 컬러 + 스타 아이콘 마커
+        const svg = createMultiTypeMarkerSvg(merchantList.length)
         const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)
         markerImage = new kakao.maps.MarkerImage(
           dataUrl,
@@ -677,14 +610,11 @@ function App() {
         setSelectedMerchants(merchantList)
         setSelectedPosition(position)
         // 선택된 마커 강조 오버레이 생성 (복합 업종이면 첫 번째 색상 사용)
-        createSelectedMarkerOverlay(position, markerColor, hasMultipleTypes ? null : markerIconPath, hasMultipleTypes ? multiTypeColors : null)
+        createSelectedMarkerOverlay(position, markerColor, markerIconPath, hasMultipleTypes)
       })
 
       markers.push(marker)
     })
-
-    // 다중 필터 여부에 따라 클러스터러 생성
-    const isMultiFilter = selectedFilters.length > 1
 
     // 기존 클러스터 오버레이 제거
     clusterOverlaysRef.current.forEach(overlay => overlay.setMap(null))
@@ -744,21 +674,17 @@ function App() {
 
         const total = totalMerchants || clusterMarkers.length
 
-        // SVG 생성
+        // SVG 생성: 단일 카테고리 vs 복합 카테고리 분기
+        const uniqueCategories = Object.keys(businessTypeCounts)
         let svg
-        if (isMultiFilter && Object.keys(businessTypeCounts).length > 1) {
-          // 다중 필터 + 여러 업종: 도넛 클러스터
-          const categoryData = Object.entries(businessTypeCounts).map(([bt, count]) => {
-            const filter = BUSINESS_TYPE_FILTERS.find(f => f.key === bt)
-            return { color: filter?.color || '#FF6B6B', count }
-          })
-          svg = createDonutClusterSvg(categoryData, total)
-        } else {
-          // 단일 업종 클러스터: 해당 업종의 색상 사용
-          const dominantBusinessType = Object.keys(businessTypeCounts)[0]
-          const dominantFilter = BUSINESS_TYPE_FILTERS.find(f => f.key === dominantBusinessType)
+        if (uniqueCategories.length === 1) {
+          // 단일 카테고리 클러스터: 해당 카테고리 색상 사용
+          const dominantFilter = BUSINESS_TYPE_FILTERS.find(f => f.key === uniqueCategories[0])
           const clusterColor = dominantFilter?.color || primaryColor
           svg = createSingleClusterSvg(clusterColor, total)
+        } else {
+          // 복합 카테고리 클러스터: 브랜드 컬러 사용
+          svg = createMixedClusterSvg(total)
         }
 
         // 커스텀 오버레이 생성
@@ -798,112 +724,8 @@ function App() {
       }
     })
 
-    // 초기 클러스터링 - redraw 후 클러스터 수동 생성
-    setTimeout(() => {
-      clusterer.redraw()
-      // redraw 직후 클러스터 직접 계산
-      setTimeout(() => {
-        // 클러스터러의 내부 메서드를 통해 클러스터 정보 접근
-        if (typeof clusterer._getClusterByLevel === 'function') {
-          const clusters = clusterer._getClusterByLevel(map.getLevel())
-          if (clusters && clusters.length > 0) {
-            updateClusterOverlays(clusters)
-          }
-        } else {
-          // 대체 방안: 마커들을 직접 분석하여 클러스터 위치 계산
-          const bounds = map.getBounds()
-          const level = map.getLevel()
-
-          // minLevel 이상일 때만 클러스터링
-          if (level >= 4) {
-            // 그리드 기반 간단한 클러스터링 계산
-            const gridSize = 60
-            const clusters = new Map()
-
-            markers.forEach(marker => {
-              const pos = marker.getPosition()
-              // 마커가 현재 뷰포트 내에 있는지 확인
-              if (bounds.contain(pos)) {
-                const proj = map.getProjection()
-                const point = proj.pointFromCoords(pos)
-                const gridKey = `${Math.floor(point.x / gridSize)}_${Math.floor(point.y / gridSize)}`
-
-                if (!clusters.has(gridKey)) {
-                  clusters.set(gridKey, { markers: [], center: point })
-                }
-                clusters.get(gridKey).markers.push(marker)
-              }
-            })
-
-            // 2개 이상인 클러스터만 오버레이 생성
-            clusters.forEach((cluster, key) => {
-              if (cluster.markers.length >= 2) {
-                // 클러스터 중심 좌표 계산
-                let sumLat = 0, sumLng = 0
-                cluster.markers.forEach(m => {
-                  const p = m.getPosition()
-                  sumLat += p.getLat()
-                  sumLng += p.getLng()
-                })
-                const centerPos = new kakao.maps.LatLng(
-                  sumLat / cluster.markers.length,
-                  sumLng / cluster.markers.length
-                )
-
-                // 업종별 카운트
-                const businessTypeCounts = {}
-                let totalMerchants = 0
-                cluster.markers.forEach(marker => {
-                  const merchantList = marker._merchantList || []
-                  totalMerchants += merchantList.length
-                  merchantList.forEach(m => {
-                    const bt = m.business_type
-                    if (bt) {
-                      businessTypeCounts[bt] = (businessTypeCounts[bt] || 0) + 1
-                    }
-                  })
-                })
-
-                const total = totalMerchants || cluster.markers.length
-
-                // SVG 생성
-                let svg
-                if (isMultiFilter && Object.keys(businessTypeCounts).length > 1) {
-                  const categoryData = Object.entries(businessTypeCounts).map(([bt, count]) => {
-                    const filter = BUSINESS_TYPE_FILTERS.find(f => f.key === bt)
-                    return { color: filter?.color || '#FF6B6B', count }
-                  })
-                  svg = createDonutClusterSvg(categoryData, total)
-                } else {
-                  // 단일 업종 클러스터: 해당 업종의 색상 사용
-                  const dominantBusinessType = Object.keys(businessTypeCounts)[0]
-                  const dominantFilter = BUSINESS_TYPE_FILTERS.find(f => f.key === dominantBusinessType)
-                  const clusterColor = dominantFilter?.color || primaryColor
-                  svg = createSingleClusterSvg(clusterColor, total)
-                }
-
-                const content = document.createElement('div')
-                content.innerHTML = svg
-                content.style.cursor = 'pointer'
-                content.onclick = () => {
-                  map.setLevel(level - 1, { anchor: centerPos })
-                }
-
-                const overlay = new kakao.maps.CustomOverlay({
-                  position: centerPos,
-                  content: content,
-                  yAnchor: 0.5,
-                  xAnchor: 0.5,
-                  zIndex: 10
-                })
-                overlay.setMap(map)
-                clusterOverlaysRef.current.push(overlay)
-              }
-            })
-          }
-        }
-      }, 50)
-    }, 50)
+    // 초기 클러스터링
+    clusterer.redraw()
 
     clustererRef.current = clusterer
     markersRef.current = markers

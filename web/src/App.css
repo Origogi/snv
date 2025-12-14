@@ -11,21 +11,21 @@
   flex-direction: column;
 }
 
-/* 상단 그라데이션 바 */
+/* 브랜드 컬러 변수 */
+:root {
+  --brand-color: #FF9F40;
+  --brand-color-light: #FFB366;
+  --brand-color-dark: #E88A2D;
+}
+
+/* 상단 브랜드 바 */
 .top-gradient-bar {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(
-    90deg,
-    #FF6B6B 0%,
-    #FFD93D 25%,
-    #6BCB77 50%,
-    #4D96FF 75%,
-    #9B59B6 100%
-  );
+  background: var(--brand-color);
   z-index: 300;
 }
 
@@ -66,7 +66,7 @@
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
-  background: linear-gradient(135deg, #FF6B6B 0%, #FFD93D 50%, #FF6B6B 100%);
+  background: var(--brand-color);
   padding: 2px;
 }
 
@@ -96,7 +96,7 @@
 
 .subtitle {
   font-size: 0.75rem;
-  color: #FF6B6B;
+  color: var(--brand-color);
   margin: 0;
   font-weight: 500;
   letter-spacing: -0.2px;
@@ -423,7 +423,7 @@
 }
 
 .bottom-sheet-multi-title .highlight {
-  color: #5B8DEF;
+  color: var(--brand-color);
 }
 
 .bottom-sheet-address-header {
@@ -552,12 +552,12 @@
 }
 
 .bottom-sheet-item.clickable:hover {
-  background: #fff5f5;
-  border-color: #ffcdd2;
+  background: #fff8f0;
+  border-color: #ffe0c0;
 }
 
 .bottom-sheet-item.clickable:hover .bottom-sheet-item-arrow {
-  color: #ff6b6b;
+  color: var(--brand-color);
 }
 
 /* 태블릿/PC 바텀시트 (가운데 정렬 카드 형태) */
@@ -842,7 +842,7 @@
   padding: 14px;
   border: none;
   border-radius: 12px;
-  background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+  background: var(--brand-color);
   color: #fff;
   font-size: 1rem;
   font-weight: 600;
