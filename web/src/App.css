@@ -284,8 +284,8 @@
   background: #fff;
   border-radius: 20px 20px 0 0;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
-  padding: 24px;
-  padding-top: 20px;
+  padding: 20px;
+  padding-top: 16px;
   position: relative;
   animation: slideUp 0.3s ease-out;
 }
@@ -330,41 +330,41 @@
 .bottom-sheet-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 4px;
 }
 
 .bottom-sheet-badge {
   display: inline-block;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 0.75rem;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 0.7rem;
   font-weight: 600;
   color: #fff;
 }
 
 .bottom-sheet-category {
-  font-size: 0.85rem;
-  color: #888;
-  font-weight: 500;
+  font-size: 0.8rem;
+  color: #999;
+  font-weight: 400;
 }
 
 .bottom-sheet-title {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: #333;
-  margin: 0 0 12px 0;
-  line-height: 1.4;
+  margin: 0 0 10px 0;
+  line-height: 1.35;
 }
 
 .bottom-sheet-address {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  padding: 14px 16px;
+  gap: 6px;
+  padding: 10px 12px;
   background: #f8f8f8;
-  border-radius: 12px;
-  margin-bottom: 16px;
+  border-radius: 10px;
+  margin-bottom: 12px;
 }
 
 .bottom-sheet-address svg {
@@ -373,10 +373,10 @@
 }
 
 .bottom-sheet-address span {
-  font-size: 0.9rem;
-  color: #666;
-  line-height: 1.5;
-  font-weight: 500;
+  font-size: 0.8rem;
+  color: #777;
+  line-height: 1.4;
+  font-weight: 400;
 }
 
 .bottom-sheet-link {
@@ -415,11 +415,11 @@
 }
 
 .bottom-sheet-multi-title {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: #333;
-  margin: 0 0 12px 0;
-  line-height: 1.4;
+  margin: 0 0 8px 0;
+  line-height: 1.35;
 }
 
 .bottom-sheet-multi-title .highlight {
@@ -429,10 +429,10 @@
 .bottom-sheet-address-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding-bottom: 16px;
-  margin-bottom: 12px;
-  border-bottom: 1px solid #eee;
+  gap: 5px;
+  padding-bottom: 10px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .bottom-sheet-address-header svg {
@@ -440,9 +440,9 @@
 }
 
 .bottom-sheet-address-header span {
-  font-size: 0.9rem;
-  color: #888;
-  line-height: 1.5;
+  font-size: 0.8rem;
+  color: #999;
+  line-height: 1.4;
   font-weight: 400;
 }
 
@@ -468,11 +468,11 @@
 .bottom-sheet-item {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 16px;
-  margin-bottom: 10px;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 8px;
   background: #fff;
-  border-radius: 16px;
+  border-radius: 14px;
   border: 1px solid #f0f0f0;
   transition: all 0.2s;
   width: 100%;
@@ -495,9 +495,9 @@
 
 .bottom-sheet-item-icon-rounded {
   flex-shrink: 0;
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   border: 1px solid;
   display: flex;
   align-items: center;
@@ -510,10 +510,10 @@
 }
 
 .bottom-sheet-item-title {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: #333;
-  margin-top: 4px;
+  margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -522,22 +522,22 @@
 .bottom-sheet-item-meta {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.8rem;
+  gap: 4px;
+  font-size: 0.75rem;
 }
 
 .bottom-sheet-badge-small {
   display: inline-block;
-  padding: 3px 8px;
+  padding: 2px 6px;
   border-radius: 4px;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 600;
   color: #fff;
 }
 
 .bottom-sheet-item-category {
-  color: #888;
-  font-weight: 500;
+  color: #aaa;
+  font-weight: 400;
 }
 
 .bottom-sheet-item-arrow {

@@ -604,8 +604,30 @@ function App() {
           clustererRef.current.removeMarker(marker)
         }
         selectedMarkerRef.current = marker
-        // 지도 중앙으로 이동 (부드럽게)
-        map.panTo(position)
+
+        // 스마트 오토 패닝: 마커를 화면 상단 1/3 지점으로 이동 (바텀시트 높이 고려)
+        const mapContainer = mapRef.current
+        if (mapContainer) {
+          const mapHeight = mapContainer.offsetHeight
+          // 바텀시트 예상 높이 (단일: ~200px, 다중: ~350px)
+          const bottomSheetHeight = merchantList.length === 1 ? 200 : 350
+          // 안전 여백 (마커와 시트 사이)
+          const safeMargin = 40
+          // 마커가 위치할 목표 Y 좌표 (화면 상단 1/3 지점)
+          const targetY = mapHeight * 0.33
+          // 필요한 오프셋 계산: 바텀시트가 마커를 가리지 않도록
+          const availableSpace = mapHeight - bottomSheetHeight - safeMargin
+          const offsetY = Math.min(targetY, availableSpace / 2)
+          // 픽셀 단위 오프셋을 위도 차이로 변환
+          const projection = map.getProjection()
+          const centerPoint = projection.pointFromCoords(position)
+          const offsetPoint = new kakao.maps.Point(centerPoint.x, centerPoint.y + (mapHeight / 2 - offsetY))
+          const offsetPosition = projection.coordsFromPoint(offsetPoint)
+          map.panTo(offsetPosition)
+        } else {
+          map.panTo(position)
+        }
+
         // 바텀시트에 표시할 가맹점 설정
         setSelectedMerchants(merchantList)
         setSelectedPosition(position)
@@ -905,7 +927,7 @@ function App() {
                   </div>
                   <h2 className="bottom-sheet-title">{selectedMerchants[0].name}</h2>
                   <div className="bottom-sheet-address">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="#999">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="#aaa">
                       <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                     </svg>
                     <span>{selectedMerchants[0].address}</span>
@@ -936,7 +958,7 @@ function App() {
                     이 건물에 <span className="highlight">{selectedMerchants.length}개</span>의 가맹점이 있어요
                   </h2>
                   <div className="bottom-sheet-address-header">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="#999">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="#aaa">
                       <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                     </svg>
                     <span>{selectedMerchants[0].address}</span>
@@ -954,7 +976,7 @@ function App() {
                             className="bottom-sheet-item-icon-rounded"
                             style={{ backgroundColor: `${categoryColor}15`, borderColor: `${categoryColor}30` }}
                             dangerouslySetInnerHTML={{
-                              __html: `<svg viewBox="0 0 24 24" width="22" height="22" fill="${categoryColor}">
+                              __html: `<svg viewBox="0 0 24 24" width="20" height="20" fill="${categoryColor}">
                                 <path d="${BUSINESS_TYPE_FILTERS.find(f => f.key === merchant.business_type)?.iconPath || ''}"/>
                               </svg>`
                             }}
