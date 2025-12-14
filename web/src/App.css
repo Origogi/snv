@@ -468,7 +468,7 @@
 .bottom-sheet-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   padding: 12px;
   margin-bottom: 8px;
   background: #fff;

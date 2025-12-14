@@ -87,6 +87,15 @@ const getCategoryColor = (businessType) => {
   return filter?.color || '#FF6B6B'
 }
 
+// 주소에서 도로명까지만 추출 (상세 번지 제외)
+const extractRoadName = (address) => {
+  if (!address) return ''
+  // "경기 성남시 분당구 황새울로360번길 42" → "경기 성남시 분당구 황새울로360번길"
+  // 패턴: 도로명 + 번길/로/길 + 숫자 까지만 (이후 상세 번지 제거)
+  const match = address.match(/^(.+?(?:로|길|대로)(?:\d*번?길?)?)(?:\s+\d+.*)?$/)
+  return match ? match[1] : address
+}
+
 // 카테고리별 아이콘 SVG 생성
 const getCategoryIconSvg = (businessType) => {
   const filter = BUSINESS_TYPE_FILTERS.find(f => f.key === businessType)
@@ -256,16 +265,58 @@ function App() {
   // 현재 선택된 필터 정보 (첫 번째 필터 기준 - 마커 색상용)
   const currentFilter = BUSINESS_TYPE_FILTERS.find(f => f.key === selectedFilters[0])
 
-  // 좌표별로 가맹점 그룹화 (중복 좌표 처리)
+  // 두 좌표 간 거리 계산 (미터 단위) - Haversine formula
+  const calculateDistance = (lat1, lng1, lat2, lng2) => {
+    const R = 6371000 // 지구 반경 (미터)
+    const dLat = (lat2 - lat1) * Math.PI / 180
+    const dLng = (lng2 - lng1) * Math.PI / 180
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    return R * c
+  }
+
+  // 좌표별로 가맹점 그룹화 (5m 반경 내 근접 마커 스냅 그룹핑)
   const merchantsByLocation = useMemo(() => {
-    const locationMap = new Map()
+    const SNAP_RADIUS = 5 // 5m 반경
+    const groups = []
 
     filteredMerchants.filter(m => m.coords).forEach(merchant => {
-      const key = `${merchant.coords.lat},${merchant.coords.lng}`
-      if (!locationMap.has(key)) {
-        locationMap.set(key, [])
+      const { lat, lng } = merchant.coords
+
+      // 기존 그룹 중 5m 이내인 그룹 찾기
+      let foundGroup = null
+      for (const group of groups) {
+        const distance = calculateDistance(lat, lng, group.centerLat, group.centerLng)
+        if (distance <= SNAP_RADIUS) {
+          foundGroup = group
+          break
+        }
       }
-      locationMap.get(key).push(merchant)
+
+      if (foundGroup) {
+        // 기존 그룹에 추가하고 중심점 재계산
+        foundGroup.merchants.push(merchant)
+        const totalLat = foundGroup.merchants.reduce((sum, m) => sum + m.coords.lat, 0)
+        const totalLng = foundGroup.merchants.reduce((sum, m) => sum + m.coords.lng, 0)
+        foundGroup.centerLat = totalLat / foundGroup.merchants.length
+        foundGroup.centerLng = totalLng / foundGroup.merchants.length
+      } else {
+        // 새 그룹 생성
+        groups.push({
+          centerLat: lat,
+          centerLng: lng,
+          merchants: [merchant]
+        })
+      }
+    })
+
+    // Map 형태로 변환 (기존 코드와 호환)
+    const locationMap = new Map()
+    groups.forEach(group => {
+      const key = `${group.centerLat},${group.centerLng}`
+      locationMap.set(key, group.merchants)
     })
 
     return locationMap
@@ -955,13 +1006,13 @@ function App() {
                 // 다중 가맹점
                 <div className="bottom-sheet-multi">
                   <h2 className="bottom-sheet-multi-title">
-                    이 건물에 <span className="highlight">{selectedMerchants.length}개</span>의 가맹점이 있어요
+                    이 위치에 <span className="highlight">{selectedMerchants.length}개</span>의 가맹점이 있어요
                   </h2>
                   <div className="bottom-sheet-address-header">
                     <svg viewBox="0 0 24 24" width="14" height="14" fill="#aaa">
                       <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                     </svg>
-                    <span>{selectedMerchants[0].address}</span>
+                    <span>{extractRoadName(selectedMerchants[0].address)} 인근</span>
                   </div>
                   <div className="bottom-sheet-list">
                     {selectedMerchants.map((merchant, index) => {
