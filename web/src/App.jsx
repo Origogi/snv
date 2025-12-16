@@ -85,6 +85,10 @@ const BUSINESS_TYPE_FILTERS = [
 // 브랜드 컬러 (복합 카테고리용)
 const BRAND_COLOR = '#FF9F40'
 
+// 성남시 중심 좌표 (검색 시 카메라 이동용)
+const SEONGNAM_CENTER = { lat: 37.42, lng: 127.13 }
+const SEARCH_ZOOM_LEVEL = 6 // 검색 시 줌 레벨 (숫자가 작을수록 넓게 보임)
+
 // 카테고리별 색상 조회 헬퍼
 const getCategoryColor = (businessType) => {
   const filter = BUSINESS_TYPE_FILTERS.find(f => f.key === businessType)
@@ -322,15 +326,24 @@ function App() {
   // 검색 실행
   const executeSearch = useCallback((query) => {
     const trimmed = query.trim()
+
     if (trimmed) {
       saveRecentSearch(trimmed)
       setAppliedSearchQuery(trimmed)
+
+      // 성남시 중심으로 카메라 이동 및 줌 아웃
+      if (mapInstanceRef.current) {
+        const center = new window.kakao.maps.LatLng(SEONGNAM_CENTER.lat, SEONGNAM_CENTER.lng)
+        mapInstanceRef.current.setCenter(center)
+        mapInstanceRef.current.setLevel(SEARCH_ZOOM_LEVEL)
+      }
     } else {
       setAppliedSearchQuery('')
     }
-    deactivateSearch(false)
+
+    setIsSearchActive(false)
     setSearchQuery(trimmed)
-  }, [saveRecentSearch, deactivateSearch])
+  }, [saveRecentSearch])
 
   // 검색어 초기화 (X 버튼)
   const clearSearch = useCallback(() => {
