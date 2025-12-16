@@ -871,6 +871,11 @@
   font-weight: 400;
 }
 
+.bottom-sheet-address .address-detail {
+  color: #999;
+  font-size: 0.75rem;
+}
+
 .bottom-sheet-link {
   display: flex;
   align-items: center;
@@ -1011,6 +1016,15 @@
   text-overflow: ellipsis;
 }
 
+.bottom-sheet-item-address {
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .bottom-sheet-item-meta {
   display: flex;
   align-items: center;
@@ -1143,31 +1157,79 @@
   align-items: center;
   justify-content: center;
   margin-left: 4px;
-  padding: 2px;
+  padding: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
+  border: none;
+  background: transparent;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: opacity 0.2s;
 }
 
 .filter-remove:hover {
-  background: rgba(255, 255, 255, 0.5);
+  opacity: 0.7;
 }
 
-/* + 더보기 버튼 */
-.filter-more-btn {
-  background: #f5f5f5 !important;
-  border-color: #ddd !important;
-  color: #666 !important;
+/* 필터 아이콘 버튼 */
+.filter-icon-btn {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  color: #666;
 }
 
-.filter-more-btn:hover {
-  background: #eee !important;
+.filter-icon-btn:hover {
+  background: #f5f5f5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.filter-more-icon {
-  font-size: 16px;
-  font-weight: 600;
+.filter-icon-btn:active {
+  transform: translateY(0);
+}
+
+/* 전체 칩 (0개 또는 11개 선택 시) */
+.filter-all-btn {
+  background: var(--brand-color) !important;
+  border-color: var(--brand-color) !important;
+  color: #fff !important;
+}
+
+/* 터치 이벤트 비활성화 */
+.filter-no-touch {
+  pointer-events: none;
+  cursor: default;
+}
+
+.filter-no-touch:hover {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* X 버튼만 클릭 가능 */
+.filter-no-touch .filter-remove {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* 요약 칩 (외 N개) */
+.filter-summary-btn {
+  background: #fff !important;
+  border-color: var(--brand-color) !important;
+  color: var(--brand-color) !important;
+  font-weight: 600 !important;
+}
+
+.filter-summary-btn:hover {
+  background: #fff8f0 !important;
 }
 
 /* 카테고리 선택 바텀시트 오버레이 */

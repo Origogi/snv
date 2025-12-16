@@ -47,7 +47,7 @@ function App() {
   // 검색 훅
   const search = useSearch(mapInstanceRef, clearSelection)
 
-  // 필터 훅
+  // 필터 훅 - 기본값: 음식점
   const filters = useFilters(['음식점'], clearSelection)
 
   // 마지막 업데이트 날짜 포맷팅
@@ -72,6 +72,7 @@ function App() {
         m.business_type?.toLowerCase().includes(query)
       )
     } else {
+      // 선택된 필터로 필터링 (최소 1개 ~ 최대 3개)
       return merchants.filter(m => filters.selectedFilters.includes(m.business_type))
     }
   }, [merchants, filters.selectedFilters, search.appliedSearchQuery, search.isSearchMode])

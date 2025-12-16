@@ -139,7 +139,7 @@ export function SearchBar({
               </div>
               <div className={recentSearches.length > 0 ? 'search-guide-desc' : 'search-empty-desc'}>
                 상호명이나 동네 이름으로<br />
-                성남 아이포인트 가맹점을 검색할 수 있습니다.
+                성남 아동수당 포인트 가맹점을 검색할 수 있습니다.
               </div>
             </div>
           </div>

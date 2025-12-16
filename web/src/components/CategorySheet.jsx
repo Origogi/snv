@@ -23,7 +23,7 @@ export function CategorySheet({
       <div className="category-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="category-sheet-header">
           <h2 className="category-sheet-title">카테고리 선택</h2>
-          <p className="category-sheet-subtitle">최대 2개까지 선택할 수 있어요</p>
+          <p className="category-sheet-subtitle">원하는 카테고리를 선택하세요 (최대 3개)</p>
           <button className="category-sheet-close" onClick={onClose}>
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
               <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
@@ -34,7 +34,7 @@ export function CategorySheet({
           {BUSINESS_TYPE_FILTERS.map(filter => {
             const isSelected = tempSelectedFilters.includes(filter.key)
             const count = merchants.filter(m => m.business_type === filter.key).length
-            const isDisabled = !isSelected && tempSelectedFilters.length >= 2
+            const isDisabled = false
             return (
               <button
                 key={filter.key}
@@ -71,7 +71,7 @@ export function CategorySheet({
             초기화
           </button>
           <button className="category-sheet-apply" onClick={onApply}>
-            {tempSelectedFilters.length}개 카테고리 적용
+            {tempSelectedFilters.length === 0 ? '전체보기 적용' : `${tempSelectedFilters.length}개 카테고리 적용`}
           </button>
         </div>
       </div>

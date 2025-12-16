@@ -11,8 +11,8 @@
 import { get, set, del } from 'idb-keyval'
 import { supabase } from './supabase'
 
-const CACHE_KEY = 'merchants_cache'
-const VERSION_KEY = 'merchants_version'
+const CACHE_KEY = 'merchants_v2_cache'
+const VERSION_KEY = 'merchants_v2_version'
 
 /**
  * Supabase에서 가맹점 수 조회 (버전 체크용)
@@ -20,7 +20,7 @@ const VERSION_KEY = 'merchants_version'
 export async function getSupabaseVersion() {
   try {
     const { count, error } = await supabase
-      .from('merchants')
+      .from('merchants_v2')
       .select('*', { count: 'exact', head: true })
 
     if (error) throw error
@@ -66,7 +66,7 @@ export async function fetchMerchantsFromSupabase() {
       const to = from + PAGE_SIZE - 1
 
       const { data, error } = await supabase
-        .from('merchants')
+        .from('merchants_v2')
         .select('*')
         .range(from, to)
 
@@ -89,6 +89,7 @@ export async function fetchMerchantsFromSupabase() {
       category: row.category,
       business_type: row.business_type,
       address: row.address,
+      address_detail: row.address_detail,
       coords: {
         lat: row.lat,
         lng: row.lng

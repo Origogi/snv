@@ -6,3 +6,12 @@ export const extractRoadName = (address) => {
   const match = address.match(/^(.+?(?:로|길|대로)(?:\d*번?길?)?)(?:\s+\d+.*)?$/)
   return match ? match[1] : address
 }
+
+// 주소에서 건물번호만 추출
+// "경기 성남시 분당구 황새울로342번길 11" → "11"
+export const extractBuildingNumber = (address) => {
+  if (!address) return ''
+  // 도로명 주소에서 마지막 숫자(건물번호) 추출
+  const match = address.match(/(?:로|길|대로)(?:\d*번?길?)?\s+(\d+(?:-\d+)?)$/)
+  return match ? match[1] : ''
+}

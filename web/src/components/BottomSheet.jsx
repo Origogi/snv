@@ -1,6 +1,6 @@
 import { BUSINESS_TYPE_FILTERS } from '../constants/categories'
 import { getCategoryColor } from '../utils/category'
-import { extractRoadName } from '../utils/address'
+import { extractRoadName, extractBuildingNumber } from '../utils/address'
 
 export function BottomSheet({ merchants, onClose }) {
   if (!merchants) return null
@@ -45,7 +45,10 @@ function SingleMerchantSheet({ merchant }) {
         <svg viewBox="0 0 24 24" width="14" height="14" fill="#aaa">
           <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
         </svg>
-        <span>{merchant.address}</span>
+        <span>
+          {merchant.address}
+          {merchant.address_detail && <span className="address-detail"> {merchant.address_detail}</span>}
+        </span>
       </div>
       {merchant.place_url ? (
         <a
@@ -119,6 +122,11 @@ function MerchantListItem({ merchant }) {
           <span className="bottom-sheet-item-category">· {merchant.category}</span>
         </div>
         <div className="bottom-sheet-item-title">{merchant.name}</div>
+        {(extractBuildingNumber(merchant.address) || merchant.address_detail) && (
+          <div className="bottom-sheet-item-address">
+            {[extractBuildingNumber(merchant.address), merchant.address_detail].filter(Boolean).join(' ')}
+          </div>
+        )}
       </div>
       {merchant.place_url && <span className="bottom-sheet-item-arrow">›</span>}
     </div>
