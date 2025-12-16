@@ -1,20 +1,18 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { RECENT_SEARCHES_KEY, MAX_RECENT_SEARCHES } from '../constants/config'
 
-export function useRecentSearches() {
-  const [recentSearches, setRecentSearches] = useState([])
+// localStorage에서 초기값 로드
+function getInitialSearches() {
+  try {
+    const saved = localStorage.getItem(RECENT_SEARCHES_KEY)
+    return saved ? JSON.parse(saved) : []
+  } catch {
+    return []
+  }
+}
 
-  // 컴포넌트 마운트 시 로드
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(RECENT_SEARCHES_KEY)
-      if (saved) {
-        setRecentSearches(JSON.parse(saved))
-      }
-    } catch (e) {
-      console.error('최근 검색어 로드 실패:', e)
-    }
-  }, [])
+export function useRecentSearches() {
+  const [recentSearches, setRecentSearches] = useState(getInitialSearches)
 
   // 검색어 저장
   const saveRecentSearch = useCallback((query) => {

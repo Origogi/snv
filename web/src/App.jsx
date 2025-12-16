@@ -23,9 +23,9 @@ function App() {
   const clusterOverlaysRef = useRef([])
   const selectedOverlayRef = useRef(null)
   const selectedMarkerRef = useRef(null)
+  const myLocationMarkerRef = useRef(null)
   const [mapLoaded, setMapLoaded] = useState(false)
   const [selectedMerchants, setSelectedMerchants] = useState(null)
-  const [selectedPosition, setSelectedPosition] = useState(null)
 
   // 데이터 로드
   const { merchants, loading, source, lastUpdatedAt } = useMerchants()
@@ -33,7 +33,6 @@ function App() {
   // 선택 상태 초기화 핸들러 (검색/필터 변경 시 호출)
   const clearSelection = useCallback(() => {
     setSelectedMerchants(null)
-    setSelectedPosition(null)
     if (selectedOverlayRef.current) {
       selectedOverlayRef.current.setMap(null)
       selectedOverlayRef.current = null
@@ -80,6 +79,15 @@ function App() {
   // 현재 선택된 필터 정보
   const currentFilter = BUSINESS_TYPE_FILTERS.find(f => f.key === filters.selectedFilters[0])
 
+  // 카테고리별 가맹점 수 (미리 계산하여 CategorySheet 성능 개선)
+  const categoryCounts = useMemo(() => {
+    const counts = {}
+    for (const m of merchants) {
+      counts[m.business_type] = (counts[m.business_type] || 0) + 1
+    }
+    return counts
+  }, [merchants])
+
   // 좌표별로 가맹점 그룹화
   const merchantsByLocation = useMemo(() => {
     const groups = []
@@ -123,7 +131,6 @@ function App() {
   // 바텀시트 닫기
   const closeBottomSheet = useCallback(() => {
     setSelectedMerchants(null)
-    setSelectedPosition(null)
     if (selectedOverlayRef.current) {
       selectedOverlayRef.current.setMap(null)
       selectedOverlayRef.current = null
@@ -172,7 +179,6 @@ function App() {
 
       kakao.maps.event.addListener(map, 'click', () => {
         setSelectedMerchants(null)
-        setSelectedPosition(null)
         if (selectedOverlayRef.current) {
           selectedOverlayRef.current.setMap(null)
           selectedOverlayRef.current = null
@@ -340,7 +346,6 @@ function App() {
         }
 
         setSelectedMerchants(merchantList)
-        setSelectedPosition(position)
         createSelectedMarkerOverlay(position, markerColor, markerIconPath, hasMultipleTypes)
       })
 
@@ -458,6 +463,42 @@ function App() {
     }
   }, [])
 
+  // 현재 위치 마커 생성
+  const createMyLocationMarker = useCallback((position) => {
+    const { kakao } = window
+    if (!kakao || !kakao.maps || !mapInstanceRef.current) return
+
+    // 기존 마커 제거
+    if (myLocationMarkerRef.current) {
+      myLocationMarkerRef.current.setMap(null)
+    }
+
+    // 현재 위치 마커 SVG (파란색 점 + 펄스 효과)
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+        <circle cx="20" cy="20" r="18" fill="#4285F4" fill-opacity="0.2">
+          <animate attributeName="r" values="10;18;10" dur="2s" repeatCount="indefinite"/>
+          <animate attributeName="fill-opacity" values="0.4;0.1;0.4" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="20" cy="20" r="8" fill="#4285F4" stroke="#fff" stroke-width="3"/>
+      </svg>
+    `
+
+    const content = document.createElement('div')
+    content.innerHTML = svg
+    content.style.cursor = 'default'
+
+    const overlay = new kakao.maps.CustomOverlay({
+      position: position,
+      content: content,
+      yAnchor: 0.5,
+      xAnchor: 0.5,
+      zIndex: 50
+    })
+    overlay.setMap(mapInstanceRef.current)
+    myLocationMarkerRef.current = overlay
+  }, [])
+
   // 현재 위치 핸들러
   const handleMyLocation = useCallback(() => {
     if (!mapInstanceRef.current) return
@@ -474,6 +515,7 @@ function App() {
           const { latitude, longitude } = position.coords
           const locPosition = new window.kakao.maps.LatLng(latitude, longitude)
           mapInstanceRef.current.panTo(locPosition)
+          createMyLocationMarker(locPosition)
         },
         (error) => {
           console.error('위치 정보를 가져올 수 없습니다:', error)
@@ -492,7 +534,7 @@ function App() {
     } else {
       alert('이 브라우저에서는 위치 서비스를 지원하지 않습니다.')
     }
-  }, [])
+  }, [createMyLocationMarker])
 
   return (
     <div className="app">
@@ -559,12 +601,10 @@ function App() {
         {/* 카테고리 선택 바텀시트 */}
         <CategorySheet
           show={filters.showCategorySheet}
-          tempSelectedFilters={filters.tempSelectedFilters}
-          merchants={merchants}
+          selectedFilters={filters.selectedFilters}
+          categoryCounts={categoryCounts}
           onClose={filters.closeCategorySheet}
-          onToggle={filters.toggleTempFilter}
           onApply={filters.applyFilters}
-          onReset={filters.resetFilters}
         />
       </div>
     </div>

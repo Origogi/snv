@@ -817,6 +817,7 @@
 
 /* 단일 가맹점 바텀시트 */
 .bottom-sheet-single {
+  display: block;
 }
 
 .bottom-sheet-header {
@@ -909,6 +910,7 @@
 
 /* 다중 가맹점 바텀시트 */
 .bottom-sheet-multi {
+  display: block;
 }
 
 .bottom-sheet-multi-title {
@@ -1359,13 +1361,6 @@
   font-size: 0.8rem;
   color: #888;
   font-weight: 500;
-}
-
-.category-chip-check {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: 2px;
 }
 
 /* 카테고리 시트 푸터 */

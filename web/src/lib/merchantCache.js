@@ -183,7 +183,7 @@ export async function loadMerchants(onData, onStatus) {
       await cacheMerchants(freshData, serverVersion)
       onData(freshData)
       onStatus?.({ loading: false, source: 'network', message: `${freshData.length}개 로드 완료` })
-    } catch (error) {
+    } catch {
       // 네트워크 오류 시 캐시 사용
       if (cachedData) {
         onStatus?.({ loading: false, source: 'cache', message: '네트워크 오류 (캐시 사용)' })
