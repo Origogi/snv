@@ -30,16 +30,16 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 대기 상태 (Idle) */
+/* 대기 상태 (Idle) - 텍스트 필드 스타일 */
 .search-bar-idle {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   background: #fff;
   border-radius: 28px;
-  padding: 6px 10px 6px 6px;
+  padding: 8px 14px 8px 8px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
-  cursor: pointer;
+  cursor: text;
   transition: all 0.2s ease;
 }
 
@@ -48,12 +48,13 @@
 }
 
 .search-bar-idle:active {
-  transform: scale(0.99);
+  transform: scale(0.995);
 }
 
+/* 앱 아이콘 (좌측) */
 .search-bar-icon {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
@@ -70,23 +71,48 @@
   transform: scale(1.35);
 }
 
+/* 검색 아이콘 (우측) */
+.search-bar-search-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f5f5f5;
+  transition: background 0.2s;
+}
+
+.search-bar-idle:hover .search-bar-search-icon {
+  background: #eee;
+}
+
+.search-bar-search-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: #888;
+}
+
 .search-bar-placeholder {
   flex: 1;
   min-width: 0;
 }
 
+/* placeholder 스타일 (텍스트 필드처럼) */
 .search-bar-title {
   font-size: 0.95rem;
-  font-weight: 600;
-  color: #333;
-  letter-spacing: -0.3px;
+  font-weight: 400;
+  color: #ACACAC;
+  letter-spacing: -0.2px;
 }
 
+/* 검색어가 입력된 상태 */
 .search-bar-query {
   font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--brand-color);
-  letter-spacing: -0.3px;
+  font-weight: 500;
+  color: #333;
+  letter-spacing: -0.2px;
 }
 
 /* 검색 결과 개수 */
@@ -215,11 +241,11 @@
    ======================================== */
 .search-overlay {
   position: fixed;
-  top: 0;
+  top: calc(64px + env(safe-area-inset-top, 0));
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 350;
+  z-index: 300;
   background: #fff;
   animation: searchOverlayIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -236,7 +262,7 @@
 }
 
 .search-overlay-content {
-  padding-top: calc(72px + env(safe-area-inset-top, 0));
+  padding-top: 16px;
   padding-left: 20px;
   padding-right: 20px;
   padding-bottom: 20px;
@@ -474,58 +500,63 @@
    PC 반응형 - 좌측 정렬 스타일
    ======================================== */
 @media (min-width: 768px) {
+  /* PC: 좌측 고정, 최대 너비 제한 */
   .unified-search-bar {
-    left: 16px;
+    left: 12px;
     right: auto;
     width: 100%;
     max-width: 400px;
-    transform: none;
+    /* PC에서 border-radius 애니메이션 제거 */
+    transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
+  /* PC 활성 상태: 검색바 + 드롭다운이 하나의 확장 카드 */
   .unified-search-bar.active {
     top: 16px;
-    left: 16px;
-    right: auto;
-    transform: none;
-    border-radius: 28px 28px 0 0;
-  }
-
-  .search-bar-active {
+    left: 12px;
     border-radius: 28px;
-    padding: 8px 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    background: #fff;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+    overflow: hidden;
   }
 
+  .unified-search-bar.active .search-bar-active {
+    padding: 12px 16px;
+    box-shadow: none;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  /* PC: 오버레이를 검색바 내부에 표시 (확장 효과) */
   .search-overlay {
-    position: absolute;
-    top: 72px;
-    left: 16px;
+    position: relative;
+    top: auto;
+    left: auto;
     right: auto;
     bottom: auto;
     width: 100%;
-    max-width: 400px;
-    max-height: 400px;
-    border-radius: 0 0 20px 20px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    animation: dropdownIn 0.2s ease-out;
+    max-width: none;
+    border-radius: 0;
+    box-shadow: none;
     transform: none;
+    max-height: 350px;
+    animation: expandDropdown 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  @keyframes dropdownIn {
+  @keyframes expandDropdown {
     from {
+      max-height: 0;
       opacity: 0;
-      transform: translateY(-10px);
     }
     to {
+      max-height: 350px;
       opacity: 1;
-      transform: translateY(0);
     }
   }
 
   .search-overlay-content {
-    padding-top: 16px;
+    padding: 16px 20px 20px;
     height: auto;
-    max-height: 380px;
+    max-height: 320px;
   }
 
   /* PC에서 가이드 영역 숨김 - 최근 검색어만 표시 */
@@ -534,61 +565,70 @@
     display: none;
   }
 
+  /* PC: 최근 검색어 없을 때 드롭다운 영역 숨김 */
+  .search-overlay:has(.search-empty):not(:has(.search-recent)) {
+    max-height: 0;
+    padding: 0;
+    animation: none;
+  }
+
+  /* PC: 최근 검색어 영역 마진 조정 */
+  .search-recent {
+    margin-top: 0;
+  }
+
   .search-result-bar {
     top: 16px;
-    left: 16px;
+    left: 12px;
     right: auto;
     max-width: 400px;
     transform: none;
   }
 
   .data-status {
-    top: 16px;
-    right: 16px;
+    bottom: 12px;
+    right: 12px;
   }
 }
 
-/* 데이터 상태 표시 (우측 상단 플로팅) */
+/* 데이터 상태 표시 (우측 하단 작게) */
 .data-status {
   position: absolute;
-  top: 76px;
+  bottom: 12px;
   right: 12px;
   z-index: 90;
-  background: #F5F5DC;
-  padding: 10px 14px;
-  border-radius: 20px;
-  font-weight: 600;
-  color: #8B7355;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-}
-
-.data-status-row {
+  background: rgba(255, 255, 255, 0.85);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  color: #999;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
+.data-status-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
 .data-status-row:first-child::before {
-  content: '';
-  width: 14px;
-  height: 14px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23C4A574'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/%3E%3C/svg%3E");
-  background-size: contain;
-  background-repeat: no-repeat;
+  display: none;
 }
 
 .data-status-date {
-  font-size: 0.8rem;
+  font-size: 0.65rem;
 }
 
 .data-status-count {
-  font-size: 0.75rem;
-  color: #A89070;
+  font-size: 0.65rem;
+  color: #aaa;
+}
+
+.data-status-count::before {
+  content: '·';
+  margin-right: 6px;
 }
 
 .content {
