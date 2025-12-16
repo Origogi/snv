@@ -1050,46 +1050,65 @@ function App() {
         {isSearchActive && (
           <div className="search-overlay" onClick={() => deactivateSearch()}>
             <div className="search-overlay-content" onClick={(e) => e.stopPropagation()}>
-              {recentSearches.length > 0 ? (
+              {/* 최근 검색어 영역 */}
+              {recentSearches.length > 0 && (
                 <div className="search-recent">
                   <div className="search-recent-header">
                     <span className="search-recent-title">최근 검색어</span>
+                    <button
+                      className="search-recent-clear-all"
+                      onClick={() => {
+                        setRecentSearches([])
+                        localStorage.removeItem(RECENT_SEARCHES_KEY)
+                      }}
+                    >
+                      전체 삭제
+                    </button>
                   </div>
-                  <div className="search-recent-list">
+                  <div className="search-recent-chips">
                     {recentSearches.map((query, index) => (
-                      <div key={index} className="search-recent-item">
-                        <button
-                          className="search-recent-query"
-                          onClick={() => {
-                            setSearchQuery(query)
-                            executeSearch(query)
+                      <button
+                        key={index}
+                        className="search-recent-chip"
+                        onClick={() => {
+                          setSearchQuery(query)
+                          executeSearch(query)
+                        }}
+                      >
+                        <span className="search-recent-chip-text">{query}</span>
+                        <span
+                          className="search-recent-chip-remove"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            removeRecentSearch(query)
                           }}
                         >
-                          <svg viewBox="0 0 24 24" width="16" height="16" fill="#999">
-                            <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9z"/>
-                          </svg>
-                          <span>{query}</span>
-                        </button>
-                        <button
-                          className="search-recent-remove"
-                          onClick={() => removeRecentSearch(query)}
-                        >
-                          <svg viewBox="0 0 24 24" width="16" height="16" fill="#ccc">
+                          <svg viewBox="0 0 24 24">
                             <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
                           </svg>
-                        </button>
-                      </div>
+                        </span>
+                      </button>
                     ))}
                   </div>
                 </div>
-              ) : (
-                <div className="search-empty">
-                  <svg viewBox="0 0 24 24" width="48" height="48" fill="#ddd">
-                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-                  </svg>
-                  <p>가맹점 이름이나 동 이름을 입력해보세요</p>
-                </div>
               )}
+
+              {/* 검색 안내 영역 */}
+              <div className={recentSearches.length > 0 ? 'search-guide' : 'search-empty'}>
+                <div className={recentSearches.length > 0 ? 'search-guide-icon' : 'search-empty-icon'}>
+                  {/* 마켓/상점 아이콘 */}
+                  <svg viewBox="0 0 24 24">
+                    <path d="M18.36 9l.6 3H5.04l.6-3h12.72M20 4H4v2h16V4zm0 3H4l-1 5v2h1v6h10v-6h4v6h2v-6h1v-2l-1-5zM6 18v-4h6v4H6z"/>
+                  </svg>
+                </div>
+                <div className={recentSearches.length > 0 ? 'search-guide-title' : 'search-empty-title'}>
+                  가맹점을 찾아보세요
+                </div>
+                <div className={recentSearches.length > 0 ? 'search-guide-desc' : 'search-empty-desc'}>
+                  상호명이나 동네 이름으로<br />
+                  성남 아이포인트 가맹점을 검색할 수 있습니다.
+                </div>
+              </div>
             </div>
           </div>
         )}
