@@ -1,6 +1,10 @@
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { useMerchants } from './hooks/useMerchants'
 import './App.css'
+
+// 최근 검색어 로컬스토리지 키
+const RECENT_SEARCHES_KEY = 'snv_recent_searches'
+const MAX_RECENT_SEARCHES = 5
 
 // 업종 필터 목록 (카테고리별 색상 및 아이콘)
 const BUSINESS_TYPE_FILTERS = [
@@ -243,8 +247,15 @@ function App() {
   const [selectedMerchants, setSelectedMerchants] = useState(null) // 바텀시트용 선택된 가맹점
   const [selectedPosition, setSelectedPosition] = useState(null) // 선택된 마커 위치
 
+  // 검색 관련 상태
+  const [isSearchActive, setIsSearchActive] = useState(false) // 검색 활성화 모드
+  const [searchQuery, setSearchQuery] = useState('') // 검색어
+  const [appliedSearchQuery, setAppliedSearchQuery] = useState('') // 적용된 검색어
+  const [recentSearches, setRecentSearches] = useState([]) // 최근 검색어
+  const searchInputRef = useRef(null) // 검색 입력창 ref
+
   // Supabase + IndexedDB 캐시로 데이터 로드
-  const { merchants, loading, source, message, lastUpdatedAt } = useMerchants()
+  const { merchants, loading, source, lastUpdatedAt } = useMerchants()
 
   // 마지막 업데이트 날짜 포맷팅
   const formattedLastUpdated = useMemo(() => {
@@ -257,10 +268,109 @@ function App() {
     }
   }, [lastUpdatedAt])
 
-  // 필터링된 가맹점 목록 (다중 필터)
+  // 최근 검색어 로드 (컴포넌트 마운트 시)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(RECENT_SEARCHES_KEY)
+      if (saved) {
+        setRecentSearches(JSON.parse(saved))
+      }
+    } catch (e) {
+      console.error('최근 검색어 로드 실패:', e)
+    }
+  }, [])
+
+  // 최근 검색어 저장
+  const saveRecentSearch = useCallback((query) => {
+    if (!query.trim()) return
+    setRecentSearches(prev => {
+      const filtered = prev.filter(s => s !== query)
+      const updated = [query, ...filtered].slice(0, MAX_RECENT_SEARCHES)
+      localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated))
+      return updated
+    })
+  }, [])
+
+  // 최근 검색어 삭제
+  const removeRecentSearch = useCallback((query) => {
+    setRecentSearches(prev => {
+      const updated = prev.filter(s => s !== query)
+      localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated))
+      return updated
+    })
+  }, [])
+
+  // 검색 활성화 (오버레이 열기)
+  const activateSearch = useCallback(() => {
+    setIsSearchActive(true)
+    // History API로 뒤로가기 처리
+    window.history.pushState({ searchActive: true }, '')
+    // 포커스 (약간의 딜레이 후)
+    setTimeout(() => {
+      searchInputRef.current?.focus()
+    }, 100)
+  }, [])
+
+  // 검색 비활성화 (오버레이 닫기)
+  const deactivateSearch = useCallback((clearQuery = true) => {
+    setIsSearchActive(false)
+    if (clearQuery) {
+      setSearchQuery('')
+    }
+  }, [])
+
+  // 검색 실행
+  const executeSearch = useCallback((query) => {
+    const trimmed = query.trim()
+    if (trimmed) {
+      saveRecentSearch(trimmed)
+      setAppliedSearchQuery(trimmed)
+    } else {
+      setAppliedSearchQuery('')
+    }
+    deactivateSearch(false)
+    setSearchQuery(trimmed)
+  }, [saveRecentSearch, deactivateSearch])
+
+  // 검색어 초기화 (X 버튼)
+  const clearSearch = useCallback(() => {
+    setSearchQuery('')
+    setAppliedSearchQuery('')
+    searchInputRef.current?.focus()
+  }, [])
+
+  // 뒤로가기 핸들러
+  useEffect(() => {
+    const handlePopState = () => {
+      if (isSearchActive) {
+        deactivateSearch()
+      }
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [isSearchActive, deactivateSearch])
+
+  // 검색 모드 여부 (검색어가 적용된 상태)
+  const isSearchMode = Boolean(appliedSearchQuery)
+
+  // 필터링된 가맹점 목록
+  // - 검색 모드: 전체 데이터에서 검색 (카테고리 필터 무시)
+  // - 브라우징 모드: 카테고리 필터만 적용
   const filteredMerchants = useMemo(() => {
-    return merchants.filter(m => selectedFilters.includes(m.business_type))
-  }, [merchants, selectedFilters])
+    if (isSearchMode) {
+      // 검색 모드: 전체 데이터에서 검색어로 필터링
+      const query = appliedSearchQuery.toLowerCase()
+      return merchants.filter(m =>
+        m.name?.toLowerCase().includes(query) ||
+        m.address?.toLowerCase().includes(query) ||
+        m.category?.toLowerCase().includes(query) ||
+        m.business_type?.toLowerCase().includes(query)
+      )
+    } else {
+      // 브라우징 모드: 카테고리 필터만 적용
+      return merchants.filter(m => selectedFilters.includes(m.business_type))
+    }
+  }, [merchants, selectedFilters, appliedSearchQuery, isSearchMode])
 
   // 현재 선택된 필터 정보 (첫 번째 필터 기준 - 마커 색상용)
   const currentFilter = BUSINESS_TYPE_FILTERS.find(f => f.key === selectedFilters[0])
@@ -857,38 +967,134 @@ function App() {
   return (
     <div className="app">
       <div className="content">
-        {/* 상단 그라데이션 바 */}
-        <div className="top-gradient-bar"></div>
-
-        {/* 플로팅 앱바 */}
-        <header className="header">
-          <div className="header-card">
-            <div className="header-content">
-              <div className="header-title">
-                <div className="app-icon-wrapper">
-                  <img src={`${import.meta.env.BASE_URL}appicon.png`} alt="앱 아이콘" className="app-icon" />
-                </div>
-                <div className="title-text">
-                  <h1>성남 아이포인트</h1>
-                  <p className="subtitle">아동수당 가맹점 지도</p>
-                </div>
+        {/* 통합 플로팅 검색바 */}
+        <div className={`unified-search-bar ${isSearchActive ? 'active' : ''} ${isSearchMode ? 'has-query' : ''}`}>
+          {/* 대기 상태 (Idle) */}
+          {!isSearchActive ? (
+            <div className="search-bar-idle" onClick={activateSearch}>
+              <div className="search-bar-icon">
+                <img src={`${import.meta.env.BASE_URL}appicon.png`} alt="앱 아이콘" className="search-bar-app-icon" />
               </div>
+              <div className="search-bar-placeholder">
+                {isSearchMode ? (
+                  <span className="search-bar-query">{appliedSearchQuery}</span>
+                ) : (
+                  <span className="search-bar-title">성남 아이포인트 가맹점 검색</span>
+                )}
+              </div>
+              {/* 검색 모드일 때 결과 개수 + X 버튼 표시 */}
+              {isSearchMode && (
+                <>
+                  <span className="search-bar-count">{filteredMerchants.length}개</span>
+                  <button
+                    className="search-bar-clear-idle"
+                    onClick={(e) => {
+                      e.stopPropagation() // 검색창 열림 방지
+                      setAppliedSearchQuery('')
+                      setSearchQuery('')
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="#999">
+                      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                  </button>
+                </>
+              )}
             </div>
-          </div>
-        </header>
-
-        {/* 데이터 상태 표시 (우측 상단) */}
-        <div className={`data-status ${source || ''}`}>
-          <div className="data-status-row">
-            <span className="data-status-date">{formattedLastUpdated && `${formattedLastUpdated} 기준`}</span>
-          </div>
-          <div className="data-status-row">
-            <span className="data-status-count">전체 {merchants.length.toLocaleString()}개</span>
-          </div>
+          ) : (
+            /* 활성 상태 (Active) */
+            <div className="search-bar-active">
+              <button className="search-bar-back" onClick={() => deactivateSearch()}>
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="#333">
+                  <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+                </svg>
+              </button>
+              <input
+                ref={searchInputRef}
+                type="text"
+                className="search-bar-input"
+                placeholder="가맹점 이름, 주소 검색"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    executeSearch(searchQuery)
+                  }
+                }}
+              />
+              {searchQuery && (
+                <button className="search-bar-clear" onClick={clearSearch}>
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="#999">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                  </svg>
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* 업종 필터 버튼 (플로팅) - 선택된 카테고리만 표시 */}
-        <div className="filter-bar">
+        {/* 검색 오버레이 (모바일: 풀스크린 / PC: 드롭다운) */}
+        {isSearchActive && (
+          <div className="search-overlay" onClick={() => deactivateSearch()}>
+            <div className="search-overlay-content" onClick={(e) => e.stopPropagation()}>
+              {recentSearches.length > 0 ? (
+                <div className="search-recent">
+                  <div className="search-recent-header">
+                    <span className="search-recent-title">최근 검색어</span>
+                  </div>
+                  <div className="search-recent-list">
+                    {recentSearches.map((query, index) => (
+                      <div key={index} className="search-recent-item">
+                        <button
+                          className="search-recent-query"
+                          onClick={() => {
+                            setSearchQuery(query)
+                            executeSearch(query)
+                          }}
+                        >
+                          <svg viewBox="0 0 24 24" width="16" height="16" fill="#999">
+                            <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9z"/>
+                          </svg>
+                          <span>{query}</span>
+                        </button>
+                        <button
+                          className="search-recent-remove"
+                          onClick={() => removeRecentSearch(query)}
+                        >
+                          <svg viewBox="0 0 24 24" width="16" height="16" fill="#ccc">
+                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="search-empty">
+                  <svg viewBox="0 0 24 24" width="48" height="48" fill="#ddd">
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                  </svg>
+                  <p>가맹점 이름이나 동 이름을 입력해보세요</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 데이터 상태 표시 (우측 상단) - 브라우징 모드일 때만 */}
+        {!isSearchActive && !isSearchMode && (
+          <div className={`data-status ${source || ''}`}>
+            <div className="data-status-row">
+              <span className="data-status-date">{formattedLastUpdated && `${formattedLastUpdated} 기준`}</span>
+            </div>
+            <div className="data-status-row">
+              <span className="data-status-count">전체 {merchants.length.toLocaleString()}개</span>
+            </div>
+          </div>
+        )}
+
+        {/* 업종 필터 버튼 (플로팅) - 브라우징 모드일 때만 표시 */}
+        <div className={`filter-bar ${isSearchActive || isSearchMode ? 'hidden' : ''}`}>
           {selectedFilters.map(filterKey => {
             const filter = BUSINESS_TYPE_FILTERS.find(f => f.key === filterKey)
             if (!filter) return null
