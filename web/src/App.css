@@ -30,8 +30,8 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 대기 상태 (Idle) - 텍스트 필드 스타일 */
-.search-bar-idle {
+/* 통합 헤더 (모바일/PC 공통) */
+.search-bar-header {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -43,33 +43,94 @@
   transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-.search-bar-idle:hover {
+.search-bar-header:hover {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
-.search-bar-idle:active {
+.search-bar-header:active {
   transform: scale(0.995);
 }
 
-/* 앱 아이콘 (좌측) */
+/* 아이콘 컨테이너: 앱 아이콘과 백 버튼이 같은 위치에서 전환 */
+.search-bar-icon-container {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+}
+
+/* 앱 아이콘 */
 .search-bar-icon {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 34px;
   height: 34px;
   border-radius: 50%;
   overflow: hidden;
-  flex-shrink: 0;
   background: var(--brand-color);
   padding: 2px;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+  transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
-.search-bar-icon:hover {
+.search-bar-icon.hidden {
+  opacity: 0;
+  transform: scale(0.8) rotate(-90deg);
+  pointer-events: none;
+}
+
+.search-bar-icon:hover:not(.hidden) {
   transform: scale(1.05);
 }
 
-.search-bar-icon:active {
+.search-bar-icon:active:not(.hidden) {
   transform: scale(0.95);
+}
+
+/* 백 버튼 */
+.search-bar-back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+  transition: opacity 0.25s ease, transform 0.25s ease, background 0.2s;
+}
+
+.search-bar-back.hidden {
+  opacity: 0;
+  transform: scale(0.8) rotate(90deg);
+  pointer-events: none;
+}
+
+.search-bar-back:hover:not(.hidden) {
+  background: #f5f5f5;
+}
+
+/* 콘텐츠 영역 */
+.search-bar-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 액션 버튼 영역 */
+.search-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .search-bar-app-icon {
@@ -184,40 +245,37 @@
   background: #eee;
 }
 
-/* 활성 상태 (Active) - 모바일 */
-.unified-search-bar.active {
-  top: 0;
-  left: 0;
-  right: 0;
-  border-radius: 0;
-}
+/* 모바일 활성 상태: 텍스트 필드 고정, 배경만 흰색으로 확장 */
+@media (max-width: 767px) {
+  .unified-search-bar.active {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    z-index: 500;
+  }
 
-.search-bar-active {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #fff;
-  padding: 12px 16px;
-  padding-top: calc(12px + env(safe-area-inset-top, 0));
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
+  /* 배경 확장 효과: ::before로 위쪽 흰색 배경 채우기 */
+  .unified-search-bar.active::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: calc(58px + env(safe-area-inset-top, 0));
+    background: #fff;
+    z-index: -1;
+    animation: fadeInBg 0.2s ease;
+  }
 
-.search-bar-back {
-  width: 40px;
-  height: 40px;
-  border: none;
-  background: transparent;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: background 0.2s;
-}
+  @keyframes fadeInBg {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
 
-.search-bar-back:hover {
-  background: #f5f5f5;
+  .unified-search-bar.active .search-bar-header {
+    border-radius: 24px;
+    box-shadow: none;
+  }
 }
 
 .search-bar-input {
@@ -259,7 +317,7 @@
    ======================================== */
 .search-overlay {
   position: fixed;
-  top: calc(64px + env(safe-area-inset-top, 0));
+  top: calc(58px + env(safe-area-inset-top, 0));
   left: 0;
   right: 0;
   bottom: 0;
@@ -520,28 +578,33 @@
 @media (min-width: 768px) {
   /* PC: 좌측 고정, 최대 너비 제한 */
   .unified-search-bar {
+    top: 10px;
     left: 12px;
     right: auto;
     width: 100%;
     max-width: 400px;
-    /* PC에서 border-radius 애니메이션 제거 */
     transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* PC 활성 상태: 검색바 + 드롭다운이 하나의 확장 카드 */
   .unified-search-bar.active {
-    top: 16px;
+    top: 10px;
     left: 12px;
-    border-radius: 28px;
+    right: auto;
+    z-index: 400;
+    width: 100%;
+    max-width: 400px;
+    border-radius: 24px;
     background: #fff;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
-    overflow: hidden;
+    overflow: visible;
   }
 
-  .unified-search-bar.active .search-bar-active {
-    padding: 12px 16px;
+  .unified-search-bar.active .search-bar-header {
+    border-radius: 24px 24px 0 0;
     box-shadow: none;
     border-bottom: 1px solid #f0f0f0;
+    padding: 7px 12px 7px 7px;  /* PC에서는 원래 패딩 유지 */
   }
 
   /* PC: 오버레이를 검색바 내부에 표시 (확장 효과) */
@@ -553,10 +616,12 @@
     bottom: auto;
     width: 100%;
     max-width: none;
-    border-radius: 0;
+    border-radius: 0 0 24px 24px;
     box-shadow: none;
     transform: none;
+    padding-top: 0;
     max-height: 350px;
+    overflow: hidden;
     animation: expandDropdown 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
@@ -577,17 +642,39 @@
     max-height: 320px;
   }
 
-  /* PC에서 가이드 영역 숨김 - 최근 검색어만 표시 */
+  /* PC에서 가이드/빈 영역 간소화 */
   .search-guide,
   .search-empty {
-    display: none;
+    padding: 40px 20px;
   }
 
-  /* PC: 최근 검색어 없을 때 드롭다운 영역 숨김 */
+  .search-guide-icon,
+  .search-empty-icon {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 16px;
+  }
+
+  .search-guide-icon svg,
+  .search-empty-icon svg {
+    width: 30px;
+    height: 30px;
+  }
+
+  .search-guide-title,
+  .search-empty-title {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+  }
+
+  .search-guide-desc,
+  .search-empty-desc {
+    font-size: 0.85rem;
+  }
+
+  /* PC: 최근 검색어 없을 때도 드롭다운 표시 (가이드 영역) */
   .search-overlay:has(.search-empty):not(:has(.search-recent)) {
-    max-height: 0;
-    padding: 0;
-    animation: none;
+    max-height: 350px;
   }
 
   /* PC: 최근 검색어 영역 마진 조정 */
@@ -596,11 +683,16 @@
   }
 
   .search-result-bar {
-    top: 16px;
+    top: 10px;
     left: 12px;
     right: auto;
     max-width: 400px;
     transform: none;
+  }
+
+  /* PC: 필터 바 위치 (모바일과 동일한 top: 62px) */
+  .filter-bar {
+    top: 62px;
   }
 
   .data-status {
