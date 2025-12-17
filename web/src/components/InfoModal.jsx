@@ -68,21 +68,6 @@ export function InfoModal({ forceOpen = false, onClose }) {
               >
                 공공데이터포털 - 성남시 아동사랑카드 가맹점 현황
               </a>
-              <br />
-              <span className="info-modal-license">공공누리 1유형 (출처표시)</span>
-            </p>
-          </div>
-
-          <div className="info-modal-section">
-            <h3>개발자</h3>
-            <p>
-              <a
-                href="https://github.com/Origogi"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Origogi (김정태)
-              </a>
             </p>
           </div>
 
@@ -91,6 +76,16 @@ export function InfoModal({ forceOpen = false, onClose }) {
               본 서비스는 공공데이터를 활용한 비공식 서비스입니다.
               가맹점 정보는 실제와 다를 수 있으니 방문 전 확인을 권장합니다.
             </p>
+          </div>
+
+          <div className="info-modal-developer">
+            <span>문의 및 피드백</span>
+            <a href="mailto:rlawjdxo1212@naver.com">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+                <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+              </svg>
+              rlawjdxo1212@naver.com (개발자)
+            </a>
           </div>
         </div>
 

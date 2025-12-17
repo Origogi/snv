@@ -39,8 +39,9 @@ export function useFilters(initialFilters = ['음식점'], onFilterChange) {
 
   // 카테고리 선택 바텀시트 열기
   const openCategorySheet = useCallback(() => {
+    onFilterChange?.() // 바텀시트 닫기
     setShowCategorySheet(true)
-  }, [])
+  }, [onFilterChange])
 
   // 카테고리 선택 바텀시트 닫기
   const closeCategorySheet = useCallback(() => {

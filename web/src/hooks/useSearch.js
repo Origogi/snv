@@ -17,12 +17,13 @@ export function useSearch(mapInstanceRef, onSearchChange) {
 
   // 검색 활성화 (오버레이 열기)
   const activateSearch = useCallback(() => {
+    onSearchChange?.() // 바텀시트 닫기
     setIsSearchActive(true)
     window.history.pushState({ searchActive: true }, '')
     setTimeout(() => {
       searchInputRef.current?.focus()
     }, 100)
-  }, [])
+  }, [onSearchChange])
 
   // 검색 비활성화 (오버레이 닫기)
   const deactivateSearch = useCallback((clearQuery = true) => {

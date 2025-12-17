@@ -1,15 +1,64 @@
+import { useState, useRef } from 'react'
 import { BUSINESS_TYPE_FILTERS } from '../constants/categories'
 import { getCategoryColor } from '../utils/category'
 import { extractRoadName, extractBuildingNumber } from '../utils/address'
 
 export function BottomSheet({ merchants, onClose }) {
+  const [dragY, setDragY] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
+  const startY = useRef(0)
+  const contentRef = useRef(null)
+
   if (!merchants) return null
 
   const isSingle = merchants.length === 1
 
+  // 터치/마우스 시작
+  const handleDragStart = (e) => {
+    setIsDragging(true)
+    startY.current = e.touches ? e.touches[0].clientY : e.clientY
+  }
+
+  // 터치/마우스 이동
+  const handleDragMove = (e) => {
+    if (!isDragging) return
+    const currentY = e.touches ? e.touches[0].clientY : e.clientY
+    const diff = currentY - startY.current
+    // 아래로만 드래그 가능
+    if (diff > 0) {
+      setDragY(diff)
+    }
+  }
+
+  // 터치/마우스 끝
+  const handleDragEnd = () => {
+    setIsDragging(false)
+    // 100px 이상 드래그하면 닫기
+    if (dragY > 100) {
+      onClose()
+    }
+    setDragY(0)
+  }
+
   return (
     <div className={`bottom-sheet ${merchants ? 'open' : ''}`}>
-      <div className="bottom-sheet-content">
+      <div
+        ref={contentRef}
+        className="bottom-sheet-content"
+        style={{
+          transform: dragY > 0 ? `translateY(${dragY}px)` : undefined,
+          transition: isDragging ? 'none' : 'transform 0.2s ease-out'
+        }}
+      >
+        {/* 드래그 핸들 (모바일 전용) */}
+        <div
+          className="bottom-sheet-handle"
+          onTouchStart={handleDragStart}
+          onTouchMove={handleDragMove}
+          onTouchEnd={handleDragEnd}
+        >
+          <div className="bottom-sheet-handle-bar" />
+        </div>
         <button className="bottom-sheet-close" onClick={onClose}>
           <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
             <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
