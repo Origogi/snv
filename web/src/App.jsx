@@ -13,6 +13,7 @@ import {
   createSingleTypeMarkerWithBadgeSvg,
   createSelectedMarkerContent,
 } from './utils/markerSvg'
+import { initAnalytics, Analytics } from './lib/firebase'
 import './App.css'
 
 function App() {
@@ -32,6 +33,13 @@ function App() {
   // 데이터 로드
   const { merchants, loading, source, lastUpdatedAt } = useMerchants()
 
+  // Analytics 초기화 및 페이지 뷰 로깅
+  useEffect(() => {
+    initAnalytics().then(() => {
+      Analytics.pageView()
+    })
+  }, [])
+
   // 선택 상태 초기화 핸들러 (검색/필터 변경 시 호출)
   const clearSelection = useCallback(() => {
     setSelectedMerchants(null)
@@ -47,6 +55,24 @@ function App() {
 
   // 검색 훅
   const search = useSearch(mapInstanceRef, clearSelection)
+
+  // 검색 실행 래퍼 (Analytics 포함)
+  const handleSearch = useCallback((query) => {
+    search.executeSearch(query)
+    if (query.trim()) {
+      // 검색 후 결과 개수를 위해 약간의 지연
+      setTimeout(() => {
+        const trimmed = query.trim().toLowerCase()
+        const resultCount = merchants.filter(m =>
+          m.name?.toLowerCase().includes(trimmed) ||
+          m.address?.toLowerCase().includes(trimmed) ||
+          m.category?.toLowerCase().includes(trimmed) ||
+          m.business_type?.toLowerCase().includes(trimmed)
+        ).length
+        Analytics.search(query.trim(), resultCount)
+      }, 0)
+    }
+  }, [search, merchants])
 
   // 필터 훅 - 기본값: 음식점
   const filters = useFilters(['음식점'], clearSelection)
@@ -349,6 +375,9 @@ function App() {
 
         setSelectedMerchants(merchantList)
         createSelectedMarkerOverlay(position, markerColor, markerIconPath, hasMultipleTypes)
+
+        // Analytics: 마커 클릭
+        Analytics.markerClick(merchantList.length, uniqueBusinessTypes)
       })
 
       markers.push(marker)
@@ -505,6 +534,9 @@ function App() {
   const handleMyLocation = useCallback(() => {
     if (!mapInstanceRef.current) return
 
+    // Analytics: 현재 위치 버튼 클릭
+    Analytics.locationClick()
+
     const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost'
     if (!isSecure) {
       alert('위치 서비스는 HTTPS 환경에서만 사용 가능합니다.')
@@ -553,7 +585,7 @@ function App() {
           recentSearches={search.recentSearches}
           onActivate={search.activateSearch}
           onDeactivate={search.deactivateSearch}
-          onSearch={search.executeSearch}
+          onSearch={handleSearch}
           onClear={search.clearSearch}
           onClearApplied={search.clearAppliedSearch}
           onQueryChange={search.setSearchQuery}

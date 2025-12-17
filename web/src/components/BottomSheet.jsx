@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { BUSINESS_TYPE_FILTERS } from '../constants/categories'
 import { getCategoryColor } from '../utils/category'
 import { extractRoadName, extractBuildingNumber } from '../utils/address'
+import { Analytics } from '../lib/firebase'
 
 export function BottomSheet({ merchants, onClose }) {
   const [dragY, setDragY] = useState(0)
@@ -108,6 +109,7 @@ function SingleMerchantSheet({ merchant }) {
           style={{
             background: `linear-gradient(135deg, ${categoryColor}, ${categoryColor}dd)`
           }}
+          onClick={() => Analytics.detailClick(merchant.name, merchant.business_type)}
         >
           매장 상세정보 확인
           <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
@@ -146,10 +148,17 @@ function MerchantListItem({ merchant }) {
   const categoryColor = getCategoryColor(merchant.business_type)
   const filter = BUSINESS_TYPE_FILTERS.find(f => f.key === merchant.business_type)
 
+  const handleItemClick = () => {
+    if (merchant.place_url) {
+      Analytics.detailClick(merchant.name, merchant.business_type)
+      window.open(merchant.place_url, '_blank')
+    }
+  }
+
   return (
     <div
       className={`bottom-sheet-item ${merchant.place_url ? 'clickable' : ''}`}
-      onClick={() => merchant.place_url && window.open(merchant.place_url, '_blank')}
+      onClick={handleItemClick}
     >
       <div
         className="bottom-sheet-item-icon-rounded"

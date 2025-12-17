@@ -660,14 +660,14 @@
 .filter-bar {
   position: absolute;
   top: 62px;
-  left: 10px;
-  right: 10px;
+  left: 0;
+  right: 0;
   z-index: 100;
   display: flex;
   gap: 8px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 4px;
+  padding: 4px 10px;
   transition: opacity 0.2s, transform 0.2s;
 }
 

@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { Analytics } from '../lib/firebase'
 
 // 최대 필터 개수 제한
 const MAX_FILTERS = 3
@@ -54,6 +55,9 @@ export function useFilters(initialFilters = ['음식점'], onFilterChange) {
     setSelectedFilters(newFilters)
     onFilterChange?.()
     setShowCategorySheet(false)
+
+    // Analytics: 필터 선택
+    Analytics.filterSelect(newFilters)
   }, [onFilterChange])
 
   return {
