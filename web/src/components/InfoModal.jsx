@@ -48,43 +48,25 @@ export function InfoModal({ forceOpen = false, onClose }) {
         {/* 콘텐츠 */}
         <div className="info-modal-content">
           <h2 className="info-modal-title">성남 아이포인트</h2>
-          <p className="info-modal-subtitle">놓치지 않는 아동수당 가맹점 지도</p>
-
-          <div className="info-modal-section">
-            <h3>서비스 소개</h3>
-            <p>
-              성남시 아이사랑응원수당(아동수당) 카드로 결제 가능한 가맹점을
-              지도에서 쉽게 찾아볼 수 있는 서비스입니다.
-            </p>
-          </div>
-
-          <div className="info-modal-section">
-            <h3>데이터 출처</h3>
-            <p>
-              <a
-                href="https://www.data.go.kr/data/15129267/fileData.do"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                공공데이터포털 - 성남시 아동사랑카드 가맹점 현황
-              </a>
-            </p>
-          </div>
+          <p className="info-modal-subtitle">아동수당 가맹점을 지도에서 쉽게 찾아보세요</p>
 
           <div className="info-modal-disclaimer">
             <p>
-              본 서비스는 공공데이터를 활용한 비공식 서비스입니다.
-              가맹점 정보는 실제와 다를 수 있으니 방문 전 확인을 권장합니다.
+              공공데이터 기반 비공식 서비스입니다. 가맹점 정보는 실제와 다를 수 있습니다.
             </p>
           </div>
 
-          <div className="info-modal-developer">
-            <span>문의 및 피드백</span>
+          <div className="info-modal-links">
+            <a
+              href="https://www.data.go.kr/data/15129267/fileData.do"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              데이터 출처 (공공데이터포털)
+            </a>
+            <span className="info-modal-divider">·</span>
             <a href="mailto:rlawjdxo1212@naver.com">
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-                <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
-              </svg>
-              rlawjdxo1212@naver.com (개발자)
+              개발자에게 문의하기
             </a>
           </div>
         </div>
