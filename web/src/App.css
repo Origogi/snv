@@ -40,7 +40,7 @@
   padding: 8px 14px 8px 8px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
   cursor: text;
-  transition: all 0.2s ease;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .search-bar-idle:hover {
@@ -60,6 +60,16 @@
   flex-shrink: 0;
   background: var(--brand-color);
   padding: 2px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.search-bar-icon:hover {
+  transform: scale(1.05);
+}
+
+.search-bar-icon:active {
+  transform: scale(0.95);
 }
 
 .search-bar-app-icon {
@@ -676,7 +686,7 @@
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
@@ -1410,4 +1420,200 @@
     border-radius: 20px;
     margin-bottom: 20px;
   }
+}
+
+/* ========================================
+   Information 모달
+   ======================================== */
+.info-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.info-modal {
+  background: #fff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 400px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  animation: slideUp 0.25s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 닫히는 애니메이션 */
+.info-modal-overlay.closing {
+  animation: fadeOut 0.2s ease-out forwards;
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.info-modal.closing {
+  animation: slideDown 0.2s ease-out forwards;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
+.info-modal-header {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  overflow: hidden;
+}
+
+.info-modal-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.info-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: background 0.2s;
+}
+
+.info-modal-close:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.info-modal-content {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.info-modal-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 4px 0;
+}
+
+.info-modal-subtitle {
+  font-size: 0.95rem;
+  color: #888;
+  margin: 0 0 20px 0;
+}
+
+.info-modal-section {
+  margin-bottom: 16px;
+}
+
+.info-modal-section h3 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #999;
+  margin: 0 0 6px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-modal-section p {
+  font-size: 0.95rem;
+  color: #333;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.info-modal-section a {
+  color: var(--brand-color);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.info-modal-section a:hover {
+  text-decoration: underline;
+}
+
+.info-modal-license {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.info-modal-disclaimer {
+  margin-top: 20px;
+  padding: 12px;
+  background: #f8f8f8;
+  border-radius: 10px;
+}
+
+.info-modal-disclaimer p {
+  font-size: 0.8rem;
+  color: #888;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.info-modal-footer {
+  padding: 16px 24px 24px;
+}
+
+.info-modal-btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: var(--brand-color);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.info-modal-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
 }

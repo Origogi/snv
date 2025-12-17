@@ -1,6 +1,7 @@
+import { forwardRef } from 'react'
 import { RECENT_SEARCHES_KEY } from '../constants/config'
 
-export function SearchBar({
+export const SearchBar = forwardRef(function SearchBar({
   isSearchActive,
   isSearchMode,
   searchQuery,
@@ -16,14 +17,22 @@ export function SearchBar({
   onQueryChange,
   onRemoveRecent,
   onClearAllRecent,
-}) {
+  onMenuClick,
+}, ref) {
   return (
     <div className={`unified-search-bar ${isSearchActive ? 'active' : ''} ${isSearchMode ? 'has-query' : ''}`}>
       {/* 대기 상태 (Idle) */}
       {!isSearchActive ? (
         <div className="search-bar-idle" onClick={onActivate}>
-          <div className="search-bar-icon">
-            <img src={`${import.meta.env.BASE_URL}appicon.png`} alt="앱 아이콘" className="search-bar-app-icon" />
+          <div
+            ref={ref}
+            className="search-bar-icon"
+            onClick={(e) => {
+              e.stopPropagation()
+              onMenuClick?.()
+            }}
+          >
+            <img src={`${import.meta.env.BASE_URL}ogimage.jpg`} alt="앱 아이콘" className="search-bar-app-icon" />
           </div>
           <div className="search-bar-placeholder">
             {isSearchMode ? (
@@ -147,4 +156,4 @@ export function SearchBar({
       )}
     </div>
   )
-}
+})

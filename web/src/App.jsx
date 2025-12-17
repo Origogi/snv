@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { useMerchants } from './hooks/useMerchants'
 import { useSearch } from './hooks/useSearch'
 import { useFilters } from './hooks/useFilters'
-import { SearchBar, BottomSheet, CategorySheet, FilterBar, MapControls, DataStatus } from './components'
+import { SearchBar, BottomSheet, CategorySheet, FilterBar, MapControls, DataStatus, InfoModal } from './components'
 import { BUSINESS_TYPE_FILTERS } from './constants/categories'
 import { SNAP_RADIUS, MAP_INITIAL_CENTER, MAP_INITIAL_LEVEL } from './constants/config'
 import { calculateDistance } from './utils/geo'
@@ -24,8 +24,10 @@ function App() {
   const selectedOverlayRef = useRef(null)
   const selectedMarkerRef = useRef(null)
   const myLocationMarkerRef = useRef(null)
+  const appIconRef = useRef(null)
   const [mapLoaded, setMapLoaded] = useState(false)
   const [selectedMerchants, setSelectedMerchants] = useState(null)
+  const [showInfoModal, setShowInfoModal] = useState(false)
 
   // 데이터 로드
   const { merchants, loading, source, lastUpdatedAt } = useMerchants()
@@ -541,6 +543,7 @@ function App() {
       <div className="content">
         {/* 통합 플로팅 검색바 */}
         <SearchBar
+          ref={appIconRef}
           isSearchActive={search.isSearchActive}
           isSearchMode={search.isSearchMode}
           searchQuery={search.searchQuery}
@@ -556,6 +559,7 @@ function App() {
           onQueryChange={search.setSearchQuery}
           onRemoveRecent={search.removeRecentSearch}
           onClearAllRecent={search.clearAllRecentSearches}
+          onMenuClick={() => setShowInfoModal(true)}
         />
 
         {/* 데이터 상태 표시 */}
@@ -605,6 +609,12 @@ function App() {
           categoryCounts={categoryCounts}
           onClose={filters.closeCategorySheet}
           onApply={filters.applyFilters}
+        />
+
+        {/* Information 모달 */}
+        <InfoModal
+          forceOpen={showInfoModal}
+          onClose={() => setShowInfoModal(false)}
         />
       </div>
     </div>
