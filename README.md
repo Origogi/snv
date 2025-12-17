@@ -12,7 +12,9 @@
 
 ## 왜 만들었나요?
 
-<img width="2048" height="2048" alt="Image" src="https://github.com/user-attachments/assets/b44fa6b5-662f-4f29-8c4e-eeda2f21713f" />
+<div align="center">
+  <img width="700" alt="왜 만들었나요?" src="https://github.com/user-attachments/assets/b44fa6b5-662f-4f29-8c4e-eeda2f21713f" />
+</div>
 
 ## 주요 기능
 
