@@ -1,6 +1,6 @@
 # 성남 아이포인트 사용처 찾기
 
-![성남 아이포인트 사용처 찾기](./public/ogimage.jpg)
+![성남 아이포인트 사용처 찾기](https://origogi.github.io/snv/banner.png)
 
 ## 서비스 소개
 
