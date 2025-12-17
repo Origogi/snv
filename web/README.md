@@ -1,16 +1,60 @@
-# React + Vite
+# 성남 아이포인트 사용처 찾기
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![성남 아이포인트 사용처 찾기](./public/ogimage.jpg)
 
-Currently, two official plugins are available:
+## 서비스 소개
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+**성남시 아동수당(아이사랑응원수당) 카드를 어디서 쓸 수 있을까요?**
 
-## React Compiler
+성남시에서 아이를 키우는 부모님들이 아동수당 포인트를 사용할 수 있는 가맹점을 쉽게 찾을 수 있도록 만든 지도 서비스입니다.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**https://origogi.github.io/snv/**
 
-## Expanding the ESLint configuration
+## 왜 만들었나요?
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+성남시는 아동수당을 지역화폐 포인트로 지급하고 있습니다. 하지만 기존에는 가맹점을 찾으려면:
+
+- 공공데이터 엑셀 파일을 다운로드해서 직접 검색하거나
+- 포털에서 일일이 가맹점명을 검색해야 했습니다
+
+**이 서비스를 사용하면:**
+
+- 지도에서 내 주변 가맹점을 한눈에 확인할 수 있습니다
+- 음식점, 마트, 병원 등 카테고리별로 필터링할 수 있습니다
+- 가맹점 이름이나 동네 이름으로 바로 검색할 수 있습니다
+- 현재 위치 기반으로 가까운 가맹점을 찾을 수 있습니다
+
+## 주요 기능
+
+### 지도 기반 가맹점 조회
+카카오맵 위에 모든 가맹점이 마커로 표시됩니다. 확대/축소하면 자동으로 클러스터링되어 깔끔하게 볼 수 있습니다.
+
+### 카테고리 필터링
+11개 카테고리 중 원하는 업종만 선택해서 볼 수 있습니다:
+- 음식점, 마트/슈퍼마켓, 교육/서점, 식품, 제과점/커피
+- 병원/약국, 미용/뷰티, 의류/패션, 생활/잡화, 스포츠/레저, 기타
+
+### 검색 기능
+가맹점 이름, 주소, 업종명으로 검색할 수 있습니다. 최근 검색어도 저장됩니다.
+
+### 현재 위치
+GPS 버튼을 누르면 내 위치가 지도에 표시되어, 주변 가맹점을 쉽게 찾을 수 있습니다.
+
+### 오프라인 지원
+한 번 접속하면 데이터가 캐시되어, 인터넷 연결이 불안정해도 사용할 수 있습니다.
+
+## 데이터 출처
+
+**공공데이터포털 - 성남시 아이사랑응원수당 아동사랑카드 가맹점 현황**
+- https://www.data.go.kr/data/15129267/fileData.do
+- 라이선스: 공공누리 1유형 (출처표시)
+
+데이터는 정기적으로 업데이트됩니다. 실제 가맹점 운영 여부는 현장에서 확인해 주세요.
+
+## 문의 및 피드백
+
+서비스 이용 중 문제가 있거나 개선 의견이 있으시면 [GitHub Issues](https://github.com/Origogi/snv/issues)에 남겨주세요.
+
+## 라이선스
+
+MIT License
