@@ -1729,8 +1729,11 @@
 }
 
 .info-modal-links {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   margin-top: 12px;
-  text-align: center;
 }
 
 .info-modal-links a {
@@ -1744,31 +1747,13 @@
   text-decoration: underline;
 }
 
-.info-modal-divider {
-  margin: 0 8px;
-  color: #ccc;
-}
-
-.info-modal-github {
+.info-modal-github-link {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 16px;
-  padding: 8px 16px;
-  background: #24292e;
-  color: #fff;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  text-decoration: none;
-  transition: background 0.2s;
+  gap: 4px;
 }
 
-.info-modal-github:hover {
-  background: #1a1e22;
-}
-
-.info-modal-github svg {
+.info-modal-github-link svg {
   flex-shrink: 0;
 }
 
