@@ -1749,6 +1749,29 @@
   color: #ccc;
 }
 
+.info-modal-github {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  padding: 8px 16px;
+  background: #24292e;
+  color: #fff;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.info-modal-github:hover {
+  background: #1a1e22;
+}
+
+.info-modal-github svg {
+  flex-shrink: 0;
+}
+
 .info-modal-footer {
   padding: 12px 20px calc(16px + env(safe-area-inset-bottom, 0));
 }
