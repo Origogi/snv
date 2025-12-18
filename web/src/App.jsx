@@ -116,11 +116,11 @@ function App() {
     return counts
   }, [merchants])
 
-  // 좌표별로 가맹점 그룹화
-  const merchantsByLocation = useMemo(() => {
+  // 전체 가맹점 좌표별 그룹화 (한 번만 계산)
+  const allMerchantsByLocation = useMemo(() => {
     const groups = []
 
-    filteredMerchants.filter(m => m.coords).forEach(merchant => {
+    merchants.filter(m => m.coords).forEach(merchant => {
       const { lat, lng } = merchant.coords
 
       let foundGroup = null
@@ -154,7 +154,33 @@ function App() {
     })
 
     return locationMap
-  }, [filteredMerchants])
+  }, [merchants])
+
+  // 필터링된 좌표별 가맹점 (빠른 필터링)
+  const filteredMerchantsByLocation = useMemo(() => {
+    const result = new Map()
+
+    allMerchantsByLocation.forEach((merchantList, key) => {
+      let filtered
+      if (search.isSearchMode) {
+        const query = search.appliedSearchQuery.toLowerCase()
+        filtered = merchantList.filter(m =>
+          m.name?.toLowerCase().includes(query) ||
+          m.address?.toLowerCase().includes(query) ||
+          m.category?.toLowerCase().includes(query) ||
+          m.business_type?.toLowerCase().includes(query)
+        )
+      } else {
+        filtered = merchantList.filter(m => filters.selectedFilters.includes(m.business_type))
+      }
+
+      if (filtered.length > 0) {
+        result.set(key, filtered)
+      }
+    })
+
+    return result
+  }, [allMerchantsByLocation, filters.selectedFilters, search.appliedSearchQuery, search.isSearchMode])
 
   // 바텀시트 닫기
   const closeBottomSheet = useCallback(() => {
@@ -283,7 +309,7 @@ function App() {
     clusterOverlaysRef.current.forEach(overlay => overlay.setMap(null))
     clusterOverlaysRef.current = []
 
-    if (merchantsByLocation.size === 0) {
+    if (filteredMerchantsByLocation.size === 0) {
       markersRef.current = []
       return
     }
@@ -302,7 +328,7 @@ function App() {
     const primaryColor = currentFilter?.color || '#FF6B6B'
     const markers = []
 
-    merchantsByLocation.forEach((merchantList, key) => {
+    filteredMerchantsByLocation.forEach((merchantList, key) => {
       const [lat, lng] = key.split(',').map(Number)
       const position = new kakao.maps.LatLng(lat, lng)
       const isMultiple = merchantList.length > 1
@@ -479,7 +505,7 @@ function App() {
 
     clustererRef.current = clusterer
     markersRef.current = markers
-  }, [merchantsByLocation, mapLoaded, currentFilter, filters.selectedFilters, createMarkerImage, createSelectedMarkerOverlay])
+  }, [filteredMerchantsByLocation, mapLoaded, currentFilter, createMarkerImage, createSelectedMarkerOverlay])
 
   // 줌 핸들러
   const handleZoomIn = useCallback(() => {
