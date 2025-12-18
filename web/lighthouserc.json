@@ -1,0 +1,14 @@
+{
+  "ci": {
+    "collect": {
+      "staticDistDir": "./dist",
+      "numberOfRuns": 3
+    },
+    "assert": {
+      "assertions": {}
+    },
+    "upload": {
+      "target": "temporary-public-storage"
+    }
+  }
+}

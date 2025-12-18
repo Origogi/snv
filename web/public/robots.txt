@@ -1,0 +1,8 @@
+# 성남 아이포인트 - 아동수당 가맹점 지도
+# https://origogi.github.io/snv/
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://origogi.github.io/snv/sitemap.xml
