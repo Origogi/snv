@@ -30,8 +30,9 @@ function App() {
   const [selectedMerchants, setSelectedMerchants] = useState(null)
   const [showInfoModal, setShowInfoModal] = useState(false)
 
-  // 데이터 로드
-  const { merchants, loading, source, lastUpdatedAt } = useMerchants()
+  // 데이터 로드 (지도 로드 후 트리거)
+  const { merchants, loading, source, lastUpdatedAt, categoryCounts, loadByCategories, startInitialLoad } = useMerchants()
+  const dataLoadStartedRef = useRef(false)
 
   // Analytics 초기화 및 페이지 뷰 로깅
   useEffect(() => {
@@ -39,6 +40,14 @@ function App() {
       Analytics.pageView()
     })
   }, [])
+
+  // 지도 로드 완료 후 데이터 로드 시작
+  useEffect(() => {
+    if (mapLoaded && !dataLoadStartedRef.current) {
+      dataLoadStartedRef.current = true
+      startInitialLoad()
+    }
+  }, [mapLoaded, startInitialLoad])
 
   // 선택 상태 초기화 핸들러 (검색/필터 변경 시 호출)
   const clearSelection = useCallback(() => {
@@ -77,6 +86,13 @@ function App() {
   // 필터 훅 - 기본값: 음식점
   const filters = useFilters(['음식점'], clearSelection)
 
+  // 필터 변경 시 새 카테고리 데이터 로드
+  useEffect(() => {
+    if (filters.selectedFilters.length > 0) {
+      loadByCategories(filters.selectedFilters)
+    }
+  }, [filters.selectedFilters, loadByCategories])
+
   // 마지막 업데이트 날짜 포맷팅
   const formattedLastUpdated = useMemo(() => {
     if (!lastUpdatedAt) return null
@@ -104,19 +120,7 @@ function App() {
     }
   }, [merchants, filters.selectedFilters, search.appliedSearchQuery, search.isSearchMode])
 
-  // 현재 선택된 필터 정보
-  const currentFilter = BUSINESS_TYPE_FILTERS.find(f => f.key === filters.selectedFilters[0])
-
-  // 카테고리별 가맹점 수 (미리 계산하여 CategorySheet 성능 개선)
-  const categoryCounts = useMemo(() => {
-    const counts = {}
-    for (const m of merchants) {
-      counts[m.business_type] = (counts[m.business_type] || 0) + 1
-    }
-    return counts
-  }, [merchants])
-
-  // 전체 가맹점 좌표별 그룹화 (한 번만 계산)
+  // 전체 가맹점 좌표별 그룹화 (마커 생성용 - 한 번만 생성)
   const allMerchantsByLocation = useMemo(() => {
     const groups = []
 
@@ -156,31 +160,29 @@ function App() {
     return locationMap
   }, [merchants])
 
-  // 필터링된 좌표별 가맹점 (빠른 필터링)
-  const filteredMerchantsByLocation = useMemo(() => {
-    const result = new Map()
+  // 필터링된 좌표 키 Set (visible 마커 결정용)
+  const visibleLocationKeys = useMemo(() => {
+    const keys = new Set()
 
     allMerchantsByLocation.forEach((merchantList, key) => {
-      let filtered
-      if (search.isSearchMode) {
-        const query = search.appliedSearchQuery.toLowerCase()
-        filtered = merchantList.filter(m =>
-          m.name?.toLowerCase().includes(query) ||
-          m.address?.toLowerCase().includes(query) ||
-          m.category?.toLowerCase().includes(query) ||
-          m.business_type?.toLowerCase().includes(query)
-        )
-      } else {
-        filtered = merchantList.filter(m => filters.selectedFilters.includes(m.business_type))
-      }
+      // 필터링 조건에 맞는 가맹점이 하나라도 있으면 visible
+      const hasMatch = search.isSearchMode
+        ? merchantList.some(m => {
+            const query = search.appliedSearchQuery.toLowerCase()
+            return m.name?.toLowerCase().includes(query) ||
+              m.address?.toLowerCase().includes(query) ||
+              m.category?.toLowerCase().includes(query) ||
+              m.business_type?.toLowerCase().includes(query)
+          })
+        : merchantList.some(m => filters.selectedFilters.includes(m.business_type))
 
-      if (filtered.length > 0) {
-        result.set(key, filtered)
+      if (hasMatch) {
+        keys.add(key)
       }
     })
 
-    return result
-  }, [allMerchantsByLocation, filters.selectedFilters, search.appliedSearchQuery, search.isSearchMode])
+    return keys
+  }, [allMerchantsByLocation, filters.selectedFilters, search.isSearchMode, search.appliedSearchQuery])
 
   // 바텀시트 닫기
   const closeBottomSheet = useCallback(() => {
@@ -288,31 +290,23 @@ function App() {
     )
   }, [])
 
-  // 마커 업데이트
+  // 마커 생성 (전체 가맹점 기반 - merchants 변경 시만 실행)
   useEffect(() => {
     const { kakao } = window
     if (!kakao || !kakao.maps || !mapInstanceRef.current) return
+    if (allMerchantsByLocation.size === 0) {
+      markersRef.current = []
+      return
+    }
 
     const map = mapInstanceRef.current
 
-    // 오버레이 정리 (setState 없이)
-    if (selectedOverlayRef.current) {
-      selectedOverlayRef.current.setMap(null)
-      selectedOverlayRef.current = null
-    }
-    selectedMarkerRef.current = null
-
+    // 기존 마커/클러스터러 정리
     if (clustererRef.current) {
       clustererRef.current.clear()
       clustererRef.current = null
     }
-    clusterOverlaysRef.current.forEach(overlay => overlay.setMap(null))
-    clusterOverlaysRef.current = []
-
-    if (filteredMerchantsByLocation.size === 0) {
-      markersRef.current = []
-      return
-    }
+    markersRef.current = []
 
     const markerImageCache = {}
     const getMarkerImage = (businessType) => {
@@ -325,10 +319,9 @@ function App() {
       return markerImageCache[businessType]
     }
 
-    const primaryColor = currentFilter?.color || '#FF6B6B'
     const markers = []
 
-    filteredMerchantsByLocation.forEach((merchantList, key) => {
+    allMerchantsByLocation.forEach((merchantList, key) => {
       const [lat, lng] = key.split(',').map(Number)
       const position = new kakao.maps.LatLng(lat, lng)
       const isMultiple = merchantList.length > 1
@@ -372,6 +365,7 @@ function App() {
       })
 
       marker._merchantList = merchantList
+      marker._locationKey = key
 
       kakao.maps.event.addListener(marker, 'click', () => {
         if (selectedMarkerRef.current && selectedMarkerRef.current !== marker && clustererRef.current) {
@@ -409,12 +403,10 @@ function App() {
       markers.push(marker)
     })
 
-    clusterOverlaysRef.current.forEach(overlay => overlay.setMap(null))
-    clusterOverlaysRef.current = []
-
+    // 빈 클러스터러 생성 (마커는 필터링 후 추가)
     const clusterer = new kakao.maps.MarkerClusterer({
       map: map,
-      markers: markers,
+      markers: [],
       gridSize: 60,
       averageCenter: true,
       minLevel: 4,
@@ -448,9 +440,9 @@ function App() {
         const businessTypeCounts = {}
         let totalMerchants = 0
         clusterMarkers.forEach(marker => {
-          const merchantList = marker._merchantList || []
-          totalMerchants += merchantList.length
-          merchantList.forEach(m => {
+          const mList = marker._merchantList || []
+          totalMerchants += mList.length
+          mList.forEach(m => {
             const bt = m.business_type
             if (bt) {
               businessTypeCounts[bt] = (businessTypeCounts[bt] || 0) + 1
@@ -463,7 +455,7 @@ function App() {
         let svg
         if (uniqueCategories.length === 1) {
           const dominantFilter = BUSINESS_TYPE_FILTERS.find(f => f.key === uniqueCategories[0])
-          const clusterColor = dominantFilter?.color || primaryColor
+          const clusterColor = dominantFilter?.color || '#FF6B6B'
           svg = createSingleClusterSvg(clusterColor, total)
         } else {
           svg = createMixedClusterSvg(total)
@@ -501,11 +493,36 @@ function App() {
       }
     })
 
-    clusterer.redraw()
-
     clustererRef.current = clusterer
     markersRef.current = markers
-  }, [filteredMerchantsByLocation, mapLoaded, currentFilter, createMarkerImage, createSelectedMarkerOverlay])
+  }, [allMerchantsByLocation, mapLoaded, createMarkerImage, createSelectedMarkerOverlay])
+
+  // 마커 필터링 (visibleLocationKeys 변경 시 - 마커 추가/제거만)
+  useEffect(() => {
+    if (!clustererRef.current || markersRef.current.length === 0) return
+
+    // 선택 상태 초기화
+    if (selectedOverlayRef.current) {
+      selectedOverlayRef.current.setMap(null)
+      selectedOverlayRef.current = null
+    }
+    selectedMarkerRef.current = null
+
+    // 클러스터러 비우기
+    clustererRef.current.clear()
+    clusterOverlaysRef.current.forEach(overlay => overlay.setMap(null))
+    clusterOverlaysRef.current = []
+
+    // visible한 마커만 클러스터러에 추가
+    const visibleMarkers = markersRef.current.filter(marker =>
+      visibleLocationKeys.has(marker._locationKey)
+    )
+
+    if (visibleMarkers.length > 0) {
+      clustererRef.current.addMarkers(visibleMarkers)
+      clustererRef.current.redraw()
+    }
+  }, [visibleLocationKeys])
 
   // 줌 핸들러
   const handleZoomIn = useCallback(() => {
@@ -624,7 +641,7 @@ function App() {
         {!search.isSearchActive && !search.isSearchMode && (
           <DataStatus
             formattedLastUpdated={formattedLastUpdated}
-            totalCount={merchants.length}
+            totalCount={Object.values(categoryCounts).reduce((sum, count) => sum + count, 0) || merchants.length}
             source={source}
           />
         )}
