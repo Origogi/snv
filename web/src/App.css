@@ -256,13 +256,15 @@
     overflow: hidden;
     background: #fff;
     border-radius: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
     display: flex;
     flex-direction: column;
     transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1),
                 left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
                 right 0.3s cubic-bezier(0.4, 0, 0.2, 1),
                 height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                border-radius 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                border-radius 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.25s ease 0.25s; /* 닫힐 때: 쉬링크 끝난 후 쉐도우 페이드인 */
   }
 
   /* 모바일 활성: 검색바가 확장 */
@@ -274,6 +276,13 @@
     height: 100dvh;
     z-index: 500;
     border-radius: 0;
+    box-shadow: none;
+    transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                right 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                border-radius 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.15s ease; /* 열릴 때: 쉐도우 즉시 사라짐 */
   }
 
   .unified-search-bar.active .search-bar-header {
@@ -678,6 +687,22 @@
     to {
       max-height: 350px;
       opacity: 1;
+    }
+  }
+
+  /* PC: 쉬링크 애니메이션 */
+  .search-overlay.closing {
+    animation: shrinkDropdown 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  @keyframes shrinkDropdown {
+    from {
+      max-height: 350px;
+      opacity: 1;
+    }
+    to {
+      max-height: 0;
+      opacity: 0;
     }
   }
 

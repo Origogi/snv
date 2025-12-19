@@ -1,4 +1,4 @@
-import { forwardRef, useRef, useEffect } from 'react'
+import { forwardRef, useRef, useEffect, useState } from 'react'
 import { RECENT_SEARCHES_KEY } from '../constants/config'
 
 export const SearchBar = forwardRef(function SearchBar({
@@ -22,12 +22,36 @@ export const SearchBar = forwardRef(function SearchBar({
   // PC용 입력 필드 ref
   const pcInputRef = useRef(null)
 
+  // PC 쉬링크 애니메이션을 위한 상태
+  const [showOverlay, setShowOverlay] = useState(false)
+  const [isClosing, setIsClosing] = useState(false)
+
   // PC에서 활성화 시 포커스
   useEffect(() => {
     if (isSearchActive && pcInputRef.current) {
       // PC인지 확인 (미디어 쿼리)
       if (window.matchMedia('(min-width: 768px)').matches) {
         setTimeout(() => pcInputRef.current?.focus(), 100)
+      }
+    }
+  }, [isSearchActive])
+
+  // 오버레이 표시/숨김 관리 (PC 쉬링크 애니메이션)
+  useEffect(() => {
+    if (isSearchActive) {
+      setShowOverlay(true)
+      setIsClosing(false)
+    } else if (showOverlay) {
+      // PC에서만 닫기 애니메이션 적용
+      if (window.matchMedia('(min-width: 768px)').matches) {
+        setIsClosing(true)
+        const timer = setTimeout(() => {
+          setShowOverlay(false)
+          setIsClosing(false)
+        }, 250) // 애니메이션 시간과 동일
+        return () => clearTimeout(timer)
+      } else {
+        setShowOverlay(false)
       }
     }
   }, [isSearchActive])
@@ -123,8 +147,8 @@ export const SearchBar = forwardRef(function SearchBar({
       </div>
 
       {/* 검색 드롭다운 (PC: 검색바 내부, 모바일: 별도 오버레이) */}
-      {isSearchActive && (
-        <div className="search-overlay" onClick={() => onDeactivate()}>
+      {showOverlay && (
+        <div className={`search-overlay ${isClosing ? 'closing' : ''}`} onClick={() => onDeactivate()}>
           <div className="search-overlay-content" onClick={(e) => e.stopPropagation()}>
             {/* 최근 검색어 영역 */}
             {recentSearches.length > 0 && (
