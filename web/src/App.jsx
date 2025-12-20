@@ -26,6 +26,7 @@ function App() {
   const selectedMarkerRef = useRef(null)
   const myLocationMarkerRef = useRef(null)
   const appIconRef = useRef(null)
+  const searchStateRef = useRef({ isSearchMode: false, query: '', selectedFilters: [] })
   const [mapLoaded, setMapLoaded] = useState(false)
   const [selectedMerchants, setSelectedMerchants] = useState(null)
   const [showInfoModal, setShowInfoModal] = useState(false)
@@ -119,6 +120,15 @@ function App() {
       return merchants.filter(m => filters.selectedFilters.includes(m.business_type))
     }
   }, [merchants, filters.selectedFilters, search.appliedSearchQuery, search.isSearchMode])
+
+  // 검색/필터 상태를 ref에 동기화 (마커 클릭 핸들러에서 사용)
+  useEffect(() => {
+    searchStateRef.current = {
+      isSearchMode: search.isSearchMode,
+      query: search.appliedSearchQuery.toLowerCase(),
+      selectedFilters: filters.selectedFilters
+    }
+  }, [search.isSearchMode, search.appliedSearchQuery, filters.selectedFilters])
 
   // 전체 가맹점 좌표별 그룹화 (마커 생성용 - 한 번만 생성)
   const allMerchantsByLocation = useMemo(() => {
@@ -376,10 +386,21 @@ function App() {
         }
         selectedMarkerRef.current = marker
 
+        // 현재 검색/필터 상태에 따라 표시할 가맹점 필터링
+        const { isSearchMode, query, selectedFilters } = searchStateRef.current
+        const visibleMerchants = isSearchMode
+          ? merchantList.filter(m =>
+              m.name?.toLowerCase().includes(query) ||
+              m.address?.toLowerCase().includes(query) ||
+              m.category?.toLowerCase().includes(query) ||
+              m.business_type?.toLowerCase().includes(query)
+            )
+          : merchantList.filter(m => selectedFilters.includes(m.business_type))
+
         const mapContainer = mapRef.current
         if (mapContainer) {
           const mapHeight = mapContainer.offsetHeight
-          const bottomSheetHeight = merchantList.length === 1 ? 200 : 350
+          const bottomSheetHeight = visibleMerchants.length === 1 ? 200 : 350
           const safeMargin = 40
           const targetY = mapHeight * 0.33
           const availableSpace = mapHeight - bottomSheetHeight - safeMargin
@@ -393,11 +414,20 @@ function App() {
           map.panTo(position)
         }
 
-        setSelectedMerchants(merchantList)
-        createSelectedMarkerOverlay(position, markerColor, markerIconPath, hasMultipleTypes)
+        setSelectedMerchants(visibleMerchants)
+
+        // 선택된 마커 스타일 결정 (필터링된 결과 기준)
+        const visibleBusinessTypes = [...new Set(visibleMerchants.map(m => m.business_type))]
+        const isVisibleMultiType = visibleBusinessTypes.length > 1
+        const visiblePrimaryMerchant = visibleMerchants[0]
+        const visibleMarkerFilter = BUSINESS_TYPE_FILTERS.find(f => f.key === visiblePrimaryMerchant?.business_type)
+        const visibleMarkerColor = visibleMarkerFilter?.color || '#FF6B6B'
+        const visibleMarkerIconPath = visibleMarkerFilter?.iconPath || ''
+
+        createSelectedMarkerOverlay(position, visibleMarkerColor, visibleMarkerIconPath, isVisibleMultiType)
 
         // Analytics: 마커 클릭
-        Analytics.markerClick(merchantList.length, uniqueBusinessTypes)
+        Analytics.markerClick(visibleMerchants.length, visibleBusinessTypes)
       })
 
       markers.push(marker)
@@ -497,8 +527,10 @@ function App() {
     markersRef.current = markers
   }, [allMerchantsByLocation, mapLoaded, createMarkerImage, createSelectedMarkerOverlay])
 
-  // 마커 필터링 (visibleLocationKeys 변경 시 - 마커 추가/제거만)
+  // 마커 필터링 (검색/필터 변경 시 - 마커 이미지 업데이트 및 추가/제거)
   useEffect(() => {
+    const { kakao } = window
+    if (!kakao || !kakao.maps) return
     if (!clustererRef.current || markersRef.current.length === 0) return
 
     // 선택 상태 초기화
@@ -513,16 +545,73 @@ function App() {
     clusterOverlaysRef.current.forEach(overlay => overlay.setMap(null))
     clusterOverlaysRef.current = []
 
-    // visible한 마커만 클러스터러에 추가
-    const visibleMarkers = markersRef.current.filter(marker =>
-      visibleLocationKeys.has(marker._locationKey)
-    )
+    // 현재 검색/필터 상태 (의존성에서 직접 참조)
+    const isSearchMode = search.isSearchMode
+    const query = search.appliedSearchQuery.toLowerCase()
+    const selectedFilters = filters.selectedFilters
+
+    // visible한 마커만 클러스터러에 추가하고, 마커 이미지 업데이트
+    const visibleMarkers = markersRef.current.filter(marker => {
+      if (!visibleLocationKeys.has(marker._locationKey)) return false
+
+      const merchantList = marker._merchantList || []
+
+      // 필터링된 가맹점 목록
+      const filteredList = isSearchMode
+        ? merchantList.filter(m =>
+            m.name?.toLowerCase().includes(query) ||
+            m.address?.toLowerCase().includes(query) ||
+            m.category?.toLowerCase().includes(query) ||
+            m.business_type?.toLowerCase().includes(query)
+          )
+        : merchantList.filter(m => selectedFilters.includes(m.business_type))
+
+      if (filteredList.length === 0) return false
+
+      // 마커 이미지 업데이트 (필터링된 개수 기준)
+      const uniqueBusinessTypes = [...new Set(filteredList.map(m => m.business_type))]
+      const hasMultipleTypes = uniqueBusinessTypes.length > 1
+      const primaryMerchant = filteredList[0]
+      const markerFilter = BUSINESS_TYPE_FILTERS.find(f => f.key === primaryMerchant.business_type)
+      const markerColor = markerFilter?.color || '#FF6B6B'
+      const markerIconPath = markerFilter?.iconPath || ''
+
+      let markerImage
+      if (hasMultipleTypes) {
+        const svg = createMultiTypeMarkerSvg(filteredList.length)
+        const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)
+        markerImage = new kakao.maps.MarkerImage(
+          dataUrl,
+          new kakao.maps.Size(36, 36),
+          { offset: new kakao.maps.Point(18, 18) }
+        )
+      } else if (filteredList.length > 1) {
+        const svg = createSingleTypeMarkerWithBadgeSvg(markerColor, markerIconPath, filteredList.length)
+        const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)
+        markerImage = new kakao.maps.MarkerImage(
+          dataUrl,
+          new kakao.maps.Size(36, 36),
+          { offset: new kakao.maps.Point(18, 18) }
+        )
+      } else {
+        markerImage = createMarkerImage(markerColor, markerIconPath)
+      }
+
+      marker.setImage(markerImage)
+      marker.setTitle(
+        filteredList.length > 1
+          ? `${filteredList[0].name} 외 ${filteredList.length - 1}곳`
+          : filteredList[0].name
+      )
+
+      return true
+    })
 
     if (visibleMarkers.length > 0) {
       clustererRef.current.addMarkers(visibleMarkers)
       clustererRef.current.redraw()
     }
-  }, [visibleLocationKeys])
+  }, [visibleLocationKeys, search.isSearchMode, search.appliedSearchQuery, filters.selectedFilters, createMarkerImage])
 
   // 줌 핸들러
   const handleZoomIn = useCallback(() => {
