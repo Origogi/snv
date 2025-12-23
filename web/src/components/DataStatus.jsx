@@ -1,6 +1,6 @@
-export function DataStatus({ formattedLastUpdated, totalCount, source }) {
+export function DataStatus({ formattedLastUpdated, totalCount }) {
   return (
-    <div className={`data-status ${source || ''}`}>
+    <div className="data-status">
       <div className="data-status-row">
         <span className="data-status-date">
           {formattedLastUpdated && `${formattedLastUpdated} 기준`}

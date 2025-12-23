@@ -32,7 +32,16 @@ function App() {
   const [showInfoModal, setShowInfoModal] = useState(false)
 
   // 데이터 로드 (지도 로드 후 트리거)
-  const { merchants, loading, source, lastUpdatedAt, categoryCounts, loadByCategories, startInitialLoad } = useMerchants()
+  const {
+    merchants,
+    loading,
+    lastUpdatedAt,
+    categoryCounts,
+    loadByCategories,
+    startInitialLoad,
+    search: searchFromDB,
+    clearSearch: clearSearchFromDB
+  } = useMerchants()
   const dataLoadStartedRef = useRef(false)
 
   // Analytics 초기화 및 페이지 뷰 로깅
@@ -66,23 +75,45 @@ function App() {
   // 검색 훅
   const search = useSearch(mapInstanceRef, clearSelection)
 
-  // 검색 실행 래퍼 (Analytics 포함)
-  const handleSearch = useCallback((query) => {
+  // 검색 실행 래퍼 (Analytics 포함 + DB 검색)
+  const handleSearch = useCallback(async (query) => {
     search.executeSearch(query)
     if (query.trim()) {
-      // 검색 후 결과 개수를 위해 약간의 지연
-      setTimeout(() => {
-        const trimmed = query.trim().toLowerCase()
-        const resultCount = merchants.filter(m =>
-          m.name?.toLowerCase().includes(trimmed) ||
-          m.address?.toLowerCase().includes(trimmed) ||
-          m.category?.toLowerCase().includes(trimmed) ||
-          m.business_type?.toLowerCase().includes(trimmed)
-        ).length
-        Analytics.search(query.trim(), resultCount)
-      }, 0)
+      // DB에서 검색 → Repository가 visibleMerchants 업데이트
+      await searchFromDB(query.trim())
+    } else {
+      clearSearchFromDB()
     }
-  }, [search, merchants])
+  }, [search, searchFromDB, clearSearchFromDB])
+
+  // 검색 결과 변경 시 Analytics 로깅
+  useEffect(() => {
+    if (search.isSearchMode && search.appliedSearchQuery) {
+      // 검색 모드일 때 merchants가 검색 결과
+      Analytics.search(search.appliedSearchQuery, merchants.length)
+    }
+  }, [search.isSearchMode, search.appliedSearchQuery, merchants.length])
+
+  // 검색 초기화 래퍼 (검색 결과도 함께 초기화)
+  const handleClearAppliedSearch = useCallback(() => {
+    search.clearAppliedSearch()
+    clearSearchFromDB()
+  }, [search, clearSearchFromDB])
+
+  // 검색 비활성화 래퍼 (← 버튼)
+  // 검색 모드: 검색 결과 유지, 입력 중인 텍스트를 appliedSearchQuery로 복원
+  // 카테고리 모드: 입력 중인 텍스트 초기화
+  const handleDeactivateSearch = useCallback(() => {
+    // 입력 중인 searchQuery를 appliedSearchQuery로 복원 (또는 빈 문자열)
+    search.setSearchQuery(search.appliedSearchQuery)
+    search.deactivateSearch(false)
+  }, [search])
+
+  // 검색어 클리어 래퍼 (입력 필드 X 버튼)
+  const handleClearSearchQuery = useCallback(() => {
+    search.clearSearch()
+    clearSearchFromDB()
+  }, [search, clearSearchFromDB])
 
   // 필터 훅 - 기본값: 음식점
   const filters = useFilters(['음식점'], clearSelection)
@@ -106,20 +137,10 @@ function App() {
   }, [lastUpdatedAt])
 
   // 필터링된 가맹점 목록
+  // Repository가 visibleMerchants를 관리하므로 merchants가 이미 필터링/검색된 결과
   const filteredMerchants = useMemo(() => {
-    if (search.isSearchMode) {
-      const query = search.appliedSearchQuery.toLowerCase()
-      return merchants.filter(m =>
-        m.name?.toLowerCase().includes(query) ||
-        m.address?.toLowerCase().includes(query) ||
-        m.category?.toLowerCase().includes(query) ||
-        m.business_type?.toLowerCase().includes(query)
-      )
-    } else {
-      // 선택된 필터로 필터링 (최소 1개 ~ 최대 3개)
-      return merchants.filter(m => filters.selectedFilters.includes(m.business_type))
-    }
-  }, [merchants, filters.selectedFilters, search.appliedSearchQuery, search.isSearchMode])
+    return merchants
+  }, [merchants])
 
   // 검색/필터 상태를 ref에 동기화 (마커 클릭 핸들러에서 사용)
   useEffect(() => {
@@ -170,29 +191,72 @@ function App() {
     return locationMap
   }, [merchants])
 
+  // 검색 결과 좌표별 그룹화 (검색 모드용)
+  // 검색 모드일 때 merchants가 검색 결과
+  const searchResultsByLocation = useMemo(() => {
+    if (!search.isSearchMode || merchants.length === 0) {
+      return new Map()
+    }
+
+    const groups = []
+
+    merchants.filter(m => m.coords).forEach(merchant => {
+      const { lat, lng } = merchant.coords
+
+      let foundGroup = null
+      for (const group of groups) {
+        const distance = calculateDistance(lat, lng, group.centerLat, group.centerLng)
+        if (distance <= SNAP_RADIUS) {
+          foundGroup = group
+          break
+        }
+      }
+
+      if (foundGroup) {
+        foundGroup.merchants.push(merchant)
+        const totalLat = foundGroup.merchants.reduce((sum, m) => sum + m.coords.lat, 0)
+        const totalLng = foundGroup.merchants.reduce((sum, m) => sum + m.coords.lng, 0)
+        foundGroup.centerLat = totalLat / foundGroup.merchants.length
+        foundGroup.centerLng = totalLng / foundGroup.merchants.length
+      } else {
+        groups.push({
+          centerLat: lat,
+          centerLng: lng,
+          merchants: [merchant]
+        })
+      }
+    })
+
+    const locationMap = new Map()
+    groups.forEach(group => {
+      const key = `${group.centerLat},${group.centerLng}`
+      locationMap.set(key, group.merchants)
+    })
+
+    return locationMap
+  }, [search.isSearchMode, merchants])
+
   // 필터링된 좌표 키 Set (visible 마커 결정용)
   const visibleLocationKeys = useMemo(() => {
     const keys = new Set()
 
-    allMerchantsByLocation.forEach((merchantList, key) => {
-      // 필터링 조건에 맞는 가맹점이 하나라도 있으면 visible
-      const hasMatch = search.isSearchMode
-        ? merchantList.some(m => {
-            const query = search.appliedSearchQuery.toLowerCase()
-            return m.name?.toLowerCase().includes(query) ||
-              m.address?.toLowerCase().includes(query) ||
-              m.category?.toLowerCase().includes(query) ||
-              m.business_type?.toLowerCase().includes(query)
-          })
-        : merchantList.some(m => filters.selectedFilters.includes(m.business_type))
-
-      if (hasMatch) {
+    if (search.isSearchMode) {
+      // 검색 모드: searchResultsByLocation의 모든 키가 visible
+      searchResultsByLocation.forEach((_, key) => {
         keys.add(key)
-      }
-    })
+      })
+    } else {
+      // 필터 모드: 기존 로직
+      allMerchantsByLocation.forEach((merchantList, key) => {
+        const hasMatch = merchantList.some(m => filters.selectedFilters.includes(m.business_type))
+        if (hasMatch) {
+          keys.add(key)
+        }
+      })
+    }
 
     return keys
-  }, [allMerchantsByLocation, filters.selectedFilters, search.isSearchMode, search.appliedSearchQuery])
+  }, [allMerchantsByLocation, searchResultsByLocation, filters.selectedFilters, search.isSearchMode])
 
   // 바텀시트 닫기
   const closeBottomSheet = useCallback(() => {
@@ -455,6 +519,9 @@ function App() {
 
       if (!clusters || clusters.length === 0) return
 
+      // 현재 필터 상태 참조
+      const { isSearchMode, selectedFilters } = searchStateRef.current
+
       clusters.forEach(cluster => {
         const clusterMarkers = cluster.getMarkers() || []
         if (clusterMarkers.length < 2) return
@@ -471,8 +538,12 @@ function App() {
         let totalMerchants = 0
         clusterMarkers.forEach(marker => {
           const mList = marker._merchantList || []
-          totalMerchants += mList.length
-          mList.forEach(m => {
+          // 현재 필터에 맞는 가맹점만 집계
+          const filteredList = isSearchMode
+            ? mList
+            : mList.filter(m => selectedFilters.includes(m.business_type))
+          totalMerchants += filteredList.length
+          filteredList.forEach(m => {
             const bt = m.business_type
             if (bt) {
               businessTypeCounts[bt] = (businessTypeCounts[bt] || 0) + 1
@@ -527,11 +598,13 @@ function App() {
     markersRef.current = markers
   }, [allMerchantsByLocation, mapLoaded, createMarkerImage, createSelectedMarkerOverlay])
 
-  // 마커 필터링 (검색/필터 변경 시 - 마커 이미지 업데이트 및 추가/제거)
+  // 마커 필터링 (필터 변경 시 - 마커 이미지 업데이트 및 추가/제거)
   useEffect(() => {
     const { kakao } = window
     if (!kakao || !kakao.maps) return
     if (!clustererRef.current || markersRef.current.length === 0) return
+    // 검색 모드에서는 이 effect를 실행하지 않음 (별도 effect에서 처리)
+    if (search.isSearchMode) return
 
     // 선택 상태 초기화
     if (selectedOverlayRef.current) {
@@ -545,9 +618,6 @@ function App() {
     clusterOverlaysRef.current.forEach(overlay => overlay.setMap(null))
     clusterOverlaysRef.current = []
 
-    // 현재 검색/필터 상태 (의존성에서 직접 참조)
-    const isSearchMode = search.isSearchMode
-    const query = search.appliedSearchQuery.toLowerCase()
     const selectedFilters = filters.selectedFilters
 
     // visible한 마커만 클러스터러에 추가하고, 마커 이미지 업데이트
@@ -555,16 +625,7 @@ function App() {
       if (!visibleLocationKeys.has(marker._locationKey)) return false
 
       const merchantList = marker._merchantList || []
-
-      // 필터링된 가맹점 목록
-      const filteredList = isSearchMode
-        ? merchantList.filter(m =>
-            m.name?.toLowerCase().includes(query) ||
-            m.address?.toLowerCase().includes(query) ||
-            m.category?.toLowerCase().includes(query) ||
-            m.business_type?.toLowerCase().includes(query)
-          )
-        : merchantList.filter(m => selectedFilters.includes(m.business_type))
+      const filteredList = merchantList.filter(m => selectedFilters.includes(m.business_type))
 
       if (filteredList.length === 0) return false
 
@@ -611,7 +672,106 @@ function App() {
       clustererRef.current.addMarkers(visibleMarkers)
       clustererRef.current.redraw()
     }
-  }, [visibleLocationKeys, search.isSearchMode, search.appliedSearchQuery, filters.selectedFilters, createMarkerImage])
+  }, [visibleLocationKeys, search.isSearchMode, filters.selectedFilters, createMarkerImage])
+
+  // 검색 결과 마커 ref
+  const searchMarkersRef = useRef([])
+
+  // 검색 모드 마커 생성/표시
+  useEffect(() => {
+    const { kakao } = window
+    if (!kakao || !kakao.maps || !mapInstanceRef.current) return
+
+    // 검색 모드가 아니면 검색 마커 정리
+    if (!search.isSearchMode) {
+      searchMarkersRef.current.forEach(marker => marker.setMap(null))
+      searchMarkersRef.current = []
+      return
+    }
+
+    // 기존 마커 숨기기
+    if (clustererRef.current) {
+      clustererRef.current.clear()
+    }
+    clusterOverlaysRef.current.forEach(overlay => overlay.setMap(null))
+    clusterOverlaysRef.current = []
+
+    // 기존 검색 마커 정리
+    searchMarkersRef.current.forEach(marker => marker.setMap(null))
+    searchMarkersRef.current = []
+
+    if (searchResultsByLocation.size === 0) return
+
+    const map = mapInstanceRef.current
+    const markers = []
+
+    searchResultsByLocation.forEach((merchantList, key) => {
+      const [lat, lng] = key.split(',').map(Number)
+      const position = new kakao.maps.LatLng(lat, lng)
+
+      const uniqueBusinessTypes = [...new Set(merchantList.map(m => m.business_type))]
+      const hasMultipleTypes = uniqueBusinessTypes.length > 1
+      const primaryMerchant = merchantList[0]
+      const markerFilter = BUSINESS_TYPE_FILTERS.find(f => f.key === primaryMerchant.business_type)
+      const markerColor = markerFilter?.color || '#FF6B6B'
+      const markerIconPath = markerFilter?.iconPath || ''
+
+      let markerImage
+      if (hasMultipleTypes) {
+        const svg = createMultiTypeMarkerSvg(merchantList.length)
+        const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)
+        markerImage = new kakao.maps.MarkerImage(
+          dataUrl,
+          new kakao.maps.Size(36, 36),
+          { offset: new kakao.maps.Point(18, 18) }
+        )
+      } else if (merchantList.length > 1) {
+        const svg = createSingleTypeMarkerWithBadgeSvg(markerColor, markerIconPath, merchantList.length)
+        const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)
+        markerImage = new kakao.maps.MarkerImage(
+          dataUrl,
+          new kakao.maps.Size(36, 36),
+          { offset: new kakao.maps.Point(18, 18) }
+        )
+      } else {
+        markerImage = createMarkerImage(markerColor, markerIconPath)
+      }
+
+      const marker = new kakao.maps.Marker({
+        position: position,
+        image: markerImage,
+        title: merchantList.length > 1
+          ? `${primaryMerchant.name} 외 ${merchantList.length - 1}곳`
+          : primaryMerchant.name
+      })
+
+      marker._merchantList = merchantList
+      marker._locationKey = key
+
+      kakao.maps.event.addListener(marker, 'click', () => {
+        if (selectedOverlayRef.current) {
+          selectedOverlayRef.current.setMap(null)
+        }
+        if (selectedMarkerRef.current) {
+          selectedMarkerRef.current.setMap(map)
+        }
+
+        marker.setMap(null)
+        selectedMarkerRef.current = marker
+
+        const overlay = createSelectedMarkerOverlay(position, merchantList)
+        overlay.setMap(map)
+        selectedOverlayRef.current = overlay
+
+        setSelectedMerchants(merchantList)
+      })
+
+      marker.setMap(map)
+      markers.push(marker)
+    })
+
+    searchMarkersRef.current = markers
+  }, [search.isSearchMode, searchResultsByLocation, createMarkerImage, createSelectedMarkerOverlay])
 
   // 줌 핸들러
   const handleZoomIn = useCallback(() => {
@@ -716,10 +876,10 @@ function App() {
           searchInputRef={search.searchInputRef}
           recentSearches={search.recentSearches}
           onActivate={search.activateSearch}
-          onDeactivate={search.deactivateSearch}
+          onDeactivate={handleDeactivateSearch}
           onSearch={handleSearch}
-          onClear={search.clearSearch}
-          onClearApplied={search.clearAppliedSearch}
+          onClear={handleClearSearchQuery}
+          onClearApplied={handleClearAppliedSearch}
           onQueryChange={search.setSearchQuery}
           onRemoveRecent={search.removeRecentSearch}
           onClearAllRecent={search.clearAllRecentSearches}
@@ -731,7 +891,6 @@ function App() {
           <DataStatus
             formattedLastUpdated={formattedLastUpdated}
             totalCount={Object.values(categoryCounts).reduce((sum, count) => sum + count, 0) || merchants.length}
-            source={source}
           />
         )}
 

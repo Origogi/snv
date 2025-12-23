@@ -1,24 +1,31 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 // 첫 방문 여부 확인
 const VISITED_KEY = 'snv_visited'
 
-export function InfoModal({ forceOpen = false, onClose }) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [isClosing, setIsClosing] = useState(false)
+// 첫 방문 여부 체크 (초기값으로 사용)
+function checkFirstVisit() {
+  const visited = localStorage.getItem(VISITED_KEY)
+  if (!visited) {
+    localStorage.setItem(VISITED_KEY, 'true')
+    return true
+  }
+  return false
+}
 
+export function InfoModal({ forceOpen = false, onClose }) {
+  const [isOpen, setIsOpen] = useState(() => checkFirstVisit())
+  const [isClosing, setIsClosing] = useState(false)
+  const prevForceOpenRef = useRef(forceOpen)
+
+  // forceOpen이 false → true로 변경될 때 모달 열기
   useEffect(() => {
-    if (forceOpen) {
+    const wasForceOpen = prevForceOpenRef.current
+    prevForceOpenRef.current = forceOpen
+
+    if (!wasForceOpen && forceOpen) {
       setIsOpen(true)
       setIsClosing(false)
-      return
-    }
-
-    // 첫 방문 시 자동 표시
-    const visited = localStorage.getItem(VISITED_KEY)
-    if (!visited) {
-      setIsOpen(true)
-      localStorage.setItem(VISITED_KEY, 'true')
     }
   }, [forceOpen])
 

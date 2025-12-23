@@ -1,5 +1,4 @@
 import { forwardRef, useRef, useEffect, useState } from 'react'
-import { RECENT_SEARCHES_KEY } from '../constants/config'
 
 export const SearchBar = forwardRef(function SearchBar({
   isSearchActive,
@@ -7,12 +6,10 @@ export const SearchBar = forwardRef(function SearchBar({
   searchQuery,
   appliedSearchQuery,
   filteredCount,
-  searchInputRef,
   recentSearches,
   onActivate,
   onDeactivate,
   onSearch,
-  onClear,
   onClearApplied,
   onQueryChange,
   onRemoveRecent,
@@ -22,9 +19,30 @@ export const SearchBar = forwardRef(function SearchBar({
   // PC용 입력 필드 ref
   const pcInputRef = useRef(null)
 
-  // PC 쉬링크 애니메이션을 위한 상태
-  const [showOverlay, setShowOverlay] = useState(false)
+  // 닫기 애니메이션 상태 (isSearchActive가 false로 변경될 때만 사용)
   const [isClosing, setIsClosing] = useState(false)
+  const prevSearchActiveRef = useRef(isSearchActive)
+
+  // 오버레이 표시 여부: isSearchActive가 true이거나 닫기 애니메이션 중일 때
+  const showOverlay = isSearchActive || isClosing
+
+  // isSearchActive 변경 감지하여 닫기 애니메이션 처리
+  useEffect(() => {
+    const wasActive = prevSearchActiveRef.current
+    prevSearchActiveRef.current = isSearchActive
+
+    // 활성 → 비활성 전환 시 닫기 애니메이션 시작
+    if (wasActive && !isSearchActive) {
+      // PC에서만 닫기 애니메이션 적용
+      if (window.matchMedia('(min-width: 768px)').matches) {
+        setIsClosing(true)
+        const timer = setTimeout(() => {
+          setIsClosing(false)
+        }, 250)
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [isSearchActive])
 
   // PC에서 활성화 시 포커스
   useEffect(() => {
@@ -32,26 +50,6 @@ export const SearchBar = forwardRef(function SearchBar({
       // PC인지 확인 (미디어 쿼리)
       if (window.matchMedia('(min-width: 768px)').matches) {
         setTimeout(() => pcInputRef.current?.focus(), 100)
-      }
-    }
-  }, [isSearchActive])
-
-  // 오버레이 표시/숨김 관리 (PC 쉬링크 애니메이션)
-  useEffect(() => {
-    if (isSearchActive) {
-      setShowOverlay(true)
-      setIsClosing(false)
-    } else if (showOverlay) {
-      // PC에서만 닫기 애니메이션 적용
-      if (window.matchMedia('(min-width: 768px)').matches) {
-        setIsClosing(true)
-        const timer = setTimeout(() => {
-          setShowOverlay(false)
-          setIsClosing(false)
-        }, 250) // 애니메이션 시간과 동일
-        return () => clearTimeout(timer)
-      } else {
-        setShowOverlay(false)
       }
     }
   }, [isSearchActive])
@@ -113,7 +111,14 @@ export const SearchBar = forwardRef(function SearchBar({
         {/* 우측 액션 버튼 영역 */}
         <div className="search-bar-actions">
           {isSearchActive && searchQuery && (
-            <button className="search-bar-clear" onClick={(e) => { e.stopPropagation(); onClear(); }}>
+            <button
+              className="search-bar-clear"
+              onClick={(e) => {
+                e.stopPropagation()
+                onQueryChange('')
+              }}
+              aria-label="입력 지우기"
+            >
               <svg viewBox="0 0 24 24" width="18" height="18" fill="#999">
                 <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
               </svg>

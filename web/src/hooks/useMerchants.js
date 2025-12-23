@@ -1,89 +1,78 @@
-import { useState, useCallback, useRef } from 'react'
-import { initialLoad, loadCategories, clearCache, getLastUpdatedAt, getCategoryCounts } from '../lib/merchantCache'
-
-const DEFAULT_CATEGORIES = ['음식점']
+import { useState, useCallback, useEffect } from 'react'
+import { merchantRepository } from '../lib/MerchantRepository'
 
 /**
- * 가맹점 데이터 로딩 훅 (점진적 로딩)
+ * 가맹점 데이터 로딩 훅
  *
- * IndexedDB 캐시 + Supabase 연동
- * - 초기 로드: 기본 카테고리(음식점)만 로드
- * - 카테고리 추가 시: 해당 카테고리만 추가 로드
- * - 캐시된 카테고리는 재사용
+ * MerchantRepository를 React 상태와 연결
+ * - visibleMerchants 구독
+ * - 로딩 상태 구독
+ * - 카테고리 필터 API
+ * - 검색 API
  */
 export function useMerchants() {
   const [merchants, setMerchants] = useState([])
-  const [lastUpdatedAt, setLastUpdatedAt] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [message, setMessage] = useState('초기화 중...')
   const [categoryCounts, setCategoryCounts] = useState({})
-  const [status, setStatus] = useState({
-    loading: true,
-    source: null,
-    message: '초기화 중...'
-  })
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(null)
 
-  // 현재 로드된 카테고리 추적
-  const loadedCategoriesRef = useRef(new Set())
-
-  // 초기 데이터 로드 함수 (외부에서 트리거)
-  const startInitialLoad = useCallback(() => {
-    // 1. 기본 카테고리 데이터 로드
-    initialLoad(DEFAULT_CATEGORIES, (data) => {
-      setMerchants(data)
-      loadedCategoriesRef.current = new Set(DEFAULT_CATEGORIES)
-    }, setStatus)
-
-    // 2. 전체 카테고리별 카운트 로드 (로드되지 않은 카테고리도 개수 표시용)
-    getCategoryCounts().then(counts => {
-      if (counts) setCategoryCounts(counts)
+  // Repository 구독 설정
+  useEffect(() => {
+    // visibleMerchants 구독
+    const unsubscribeMerchants = merchantRepository.subscribe((visibleMerchants) => {
+      setMerchants(visibleMerchants)
     })
 
-    // 3. 마지막 업데이트 시간 로드
-    getLastUpdatedAt().then(setLastUpdatedAt)
+    // 로딩 상태 구독
+    const unsubscribeStatus = merchantRepository.subscribeStatus((status) => {
+      setLoading(status.loading)
+      setMessage(status.message)
+    })
+
+    return () => {
+      unsubscribeMerchants()
+      unsubscribeStatus()
+    }
+  }, [])
+
+  // 초기 데이터 로드
+  const startInitialLoad = useCallback(async () => {
+    await merchantRepository.initialize()
+    setCategoryCounts(merchantRepository.categoryCounts)
+    setLastUpdatedAt(merchantRepository.lastUpdatedAt)
   }, [])
 
   // 카테고리 변경 시 데이터 로드
   const loadByCategories = useCallback(async (categories) => {
-    if (!categories || categories.length === 0) return
+    await merchantRepository.setCategories(categories)
+  }, [])
 
-    // 이미 로드된 카테고리 필터링
-    const needToLoad = categories.filter(cat => !loadedCategoriesRef.current.has(cat))
+  // DB에서 검색
+  const search = useCallback(async (query) => {
+    await merchantRepository.search(query)
+  }, [])
 
-    if (needToLoad.length === 0) {
-      // 모든 카테고리가 이미 로드됨 - 필터링만 수행
-      return
-    }
-
-    // 새 카테고리 로드
-    const newData = await loadCategories(needToLoad, setStatus)
-
-    // 로드된 카테고리 추적 업데이트
-    needToLoad.forEach(cat => loadedCategoriesRef.current.add(cat))
-
-    // 기존 데이터에 새 데이터 추가
-    setMerchants(prev => [...prev, ...newData])
+  // 검색 결과 초기화
+  const clearSearch = useCallback(() => {
+    merchantRepository.clearSearch()
   }, [])
 
   // 수동 새로고침
   const refresh = useCallback(async () => {
-    await clearCache()
-    setMerchants([])
-    loadedCategoriesRef.current = new Set()
-    setStatus({ loading: true, source: null, message: '새로고침 중...' })
-    await initialLoad(DEFAULT_CATEGORIES, (data) => {
-      setMerchants(data)
-      loadedCategoriesRef.current = new Set(DEFAULT_CATEGORIES)
-    }, setStatus)
+    await merchantRepository.refresh()
   }, [])
 
   return {
     merchants,
-    loading: status.loading,
-    source: status.source,
-    message: status.message,
+    loading,
+    message,
     lastUpdatedAt,
     categoryCounts,
     refresh,
     loadByCategories,
-    startInitialLoad
+    startInitialLoad,
+    search,
+    clearSearch
   }
 }
