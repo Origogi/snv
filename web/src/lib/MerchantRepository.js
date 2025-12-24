@@ -135,7 +135,7 @@ class MerchantRepository {
 
   /**
    * 검색 실행 (DB 직접 조회)
-   * 검색 결과를 visibleMerchants에 반영
+   * 검색 결과를 visibleMerchants에 반영 + cachedMerchants에 병합
    * @param {string} query - 검색어
    * @returns {Promise<void>}
    */
@@ -151,8 +151,43 @@ class MerchantRepository {
       const results = await this._searchFromSupabase(searchTerm)
       console.log(`[검색: ${searchTerm}] ${results.length}개 검색 완료`)
 
+      // 검색 결과를 visibleMerchants에 설정
       this.visibleMerchants = results
       this._notifyListeners()
+
+      // 검색 결과를 카테고리별로 분류하여 cachedMerchants에 병합
+      const categoryMap = new Map()
+      results.forEach(merchant => {
+        const category = merchant.business_type
+        if (!categoryMap.has(category)) {
+          categoryMap.set(category, [])
+        }
+        categoryMap.get(category).push(merchant)
+      })
+
+      // 각 카테고리별로 기존 캐시와 병합 (중복 제거)
+      categoryMap.forEach((newMerchants, category) => {
+        const existing = this.cachedMerchants.get(category) || []
+
+        // 중복 제거: name + address 기준
+        const merged = [...existing]
+        const existingKeys = new Set(
+          existing.map(m => `${m.name}|${m.address}`)
+        )
+
+        newMerchants.forEach(merchant => {
+          const key = `${merchant.name}|${merchant.address}`
+          if (!existingKeys.has(key)) {
+            merged.push(merchant)
+          }
+        })
+
+        this.cachedMerchants.set(category, merged)
+        this.loadedCategories.add(category)
+      })
+
+      // allMerchants 리스너들에게 알림 (마커 재생성 트리거)
+      this._notifyAllMerchantsListeners()
 
       this._setLoading(false, 'network', `${results.length}개 검색 결과`)
     } catch (error) {
