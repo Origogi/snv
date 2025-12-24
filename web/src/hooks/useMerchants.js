@@ -11,7 +11,8 @@ import { merchantRepository } from '../lib/MerchantRepository'
  * - 검색 API
  */
 export function useMerchants() {
-  const [merchants, setMerchants] = useState([])
+  const [allMerchants, setAllMerchants] = useState([])
+  const [visibleMerchants, setVisibleMerchants] = useState([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('초기화 중...')
   const [categoryCounts, setCategoryCounts] = useState({})
@@ -19,9 +20,14 @@ export function useMerchants() {
 
   // Repository 구독 설정
   useEffect(() => {
-    // visibleMerchants 구독
-    const unsubscribeMerchants = merchantRepository.subscribe((visibleMerchants) => {
-      setMerchants(visibleMerchants)
+    // allMerchants 구독 (로드된 모든 가맹점)
+    const unsubscribeAll = merchantRepository.subscribeAll((merchants) => {
+      setAllMerchants(merchants)
+    })
+
+    // visibleMerchants 구독 (검색/필터 적용)
+    const unsubscribeVisible = merchantRepository.subscribe((merchants) => {
+      setVisibleMerchants(merchants)
     })
 
     // 로딩 상태 구독
@@ -31,7 +37,8 @@ export function useMerchants() {
     })
 
     return () => {
-      unsubscribeMerchants()
+      unsubscribeAll()
+      unsubscribeVisible()
       unsubscribeStatus()
     }
   }, [])
@@ -64,7 +71,8 @@ export function useMerchants() {
   }, [])
 
   return {
-    merchants,
+    allMerchants,      // 로드된 모든 가맹점 (마커 생성용)
+    visibleMerchants,  // 검색/필터 적용된 가맹점 (마커 필터링 + 클릭용)
     loading,
     message,
     lastUpdatedAt,

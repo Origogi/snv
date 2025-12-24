@@ -26,14 +26,14 @@ function App() {
   const selectedMarkerRef = useRef(null)
   const myLocationMarkerRef = useRef(null)
   const appIconRef = useRef(null)
-  const searchStateRef = useRef({ isSearchMode: false, query: '', selectedFilters: [] })
   const [mapLoaded, setMapLoaded] = useState(false)
   const [selectedMerchants, setSelectedMerchants] = useState(null)
   const [showInfoModal, setShowInfoModal] = useState(false)
 
   // 데이터 로드 (지도 로드 후 트리거)
   const {
-    merchants,
+    allMerchants,      // 로드된 모든 가맹점 (마커 생성용)
+    visibleMerchants,  // 검색/필터 적용된 가맹점
     loading,
     lastUpdatedAt,
     categoryCounts,
@@ -89,10 +89,10 @@ function App() {
   // 검색 결과 변경 시 Analytics 로깅
   useEffect(() => {
     if (search.isSearchMode && search.appliedSearchQuery) {
-      // 검색 모드일 때 merchants가 검색 결과
-      Analytics.search(search.appliedSearchQuery, merchants.length)
+      // 검색 모드일 때 visibleMerchants가 검색 결과
+      Analytics.search(search.appliedSearchQuery, visibleMerchants.length)
     }
-  }, [search.isSearchMode, search.appliedSearchQuery, merchants.length])
+  }, [search.isSearchMode, search.appliedSearchQuery, visibleMerchants.length])
 
   // 검색 초기화 래퍼 (검색 결과도 함께 초기화)
   const handleClearAppliedSearch = useCallback(() => {
@@ -137,25 +137,17 @@ function App() {
   }, [lastUpdatedAt])
 
   // 필터링된 가맹점 목록
-  // Repository가 visibleMerchants를 관리하므로 merchants가 이미 필터링/검색된 결과
+  // Repository가 visibleMerchants를 관리하므로 이미 필터링/검색된 결과
   const filteredMerchants = useMemo(() => {
-    return merchants
-  }, [merchants])
+    return visibleMerchants
+  }, [visibleMerchants])
 
-  // 검색/필터 상태를 ref에 동기화 (마커 클릭 핸들러에서 사용)
-  useEffect(() => {
-    searchStateRef.current = {
-      isSearchMode: search.isSearchMode,
-      query: search.appliedSearchQuery.toLowerCase(),
-      selectedFilters: filters.selectedFilters
-    }
-  }, [search.isSearchMode, search.appliedSearchQuery, filters.selectedFilters])
 
-  // 전체 가맹점 좌표별 그룹화 (마커 생성용 - 한 번만 생성)
+  // 전체 가맹점 좌표별 그룹화 (마커 생성용)
   const allMerchantsByLocation = useMemo(() => {
     const groups = []
 
-    merchants.filter(m => m.coords).forEach(merchant => {
+    allMerchants.filter(m => m.coords).forEach(merchant => {
       const { lat, lng } = merchant.coords
 
       let foundGroup = null
@@ -189,18 +181,18 @@ function App() {
     })
 
     return locationMap
-  }, [merchants])
+  }, [allMerchants])
 
   // 검색 결과 좌표별 그룹화 (검색 모드용)
-  // 검색 모드일 때 merchants가 검색 결과
+  // 검색 모드일 때 visibleMerchants가 검색 결과
   const searchResultsByLocation = useMemo(() => {
-    if (!search.isSearchMode || merchants.length === 0) {
+    if (!search.isSearchMode || visibleMerchants.length === 0) {
       return new Map()
     }
 
     const groups = []
 
-    merchants.filter(m => m.coords).forEach(merchant => {
+    visibleMerchants.filter(m => m.coords).forEach(merchant => {
       const { lat, lng } = merchant.coords
 
       let foundGroup = null
@@ -234,7 +226,7 @@ function App() {
     })
 
     return locationMap
-  }, [search.isSearchMode, merchants])
+  }, [search.isSearchMode, visibleMerchants])
 
   // 필터링된 좌표 키 Set (visible 마커 결정용)
   const visibleLocationKeys = useMemo(() => {
@@ -450,21 +442,17 @@ function App() {
         }
         selectedMarkerRef.current = marker
 
-        // 현재 검색/필터 상태에 따라 표시할 가맹점 필터링
-        const { isSearchMode, query, selectedFilters } = searchStateRef.current
-        const visibleMerchants = isSearchMode
-          ? merchantList.filter(m =>
-              m.name?.toLowerCase().includes(query) ||
-              m.address?.toLowerCase().includes(query) ||
-              m.category?.toLowerCase().includes(query) ||
-              m.business_type?.toLowerCase().includes(query)
-            )
-          : merchantList.filter(m => selectedFilters.includes(m.business_type))
+        // 마커에 저장된 필터링된 가맹점 목록 사용
+        const clickedMerchants = marker._visibleMerchantList || []
+
+        if (clickedMerchants.length === 0) {
+          return // 보이는 가맹점이 없으면 무시
+        }
 
         const mapContainer = mapRef.current
         if (mapContainer) {
           const mapHeight = mapContainer.offsetHeight
-          const bottomSheetHeight = visibleMerchants.length === 1 ? 200 : 350
+          const bottomSheetHeight = clickedMerchants.length === 1 ? 200 : 350
           const safeMargin = 40
           const targetY = mapHeight * 0.33
           const availableSpace = mapHeight - bottomSheetHeight - safeMargin
@@ -478,20 +466,20 @@ function App() {
           map.panTo(position)
         }
 
-        setSelectedMerchants(visibleMerchants)
+        setSelectedMerchants(clickedMerchants)
 
-        // 선택된 마커 스타일 결정 (필터링된 결과 기준)
-        const visibleBusinessTypes = [...new Set(visibleMerchants.map(m => m.business_type))]
-        const isVisibleMultiType = visibleBusinessTypes.length > 1
-        const visiblePrimaryMerchant = visibleMerchants[0]
-        const visibleMarkerFilter = BUSINESS_TYPE_FILTERS.find(f => f.key === visiblePrimaryMerchant?.business_type)
-        const visibleMarkerColor = visibleMarkerFilter?.color || '#FF6B6B'
-        const visibleMarkerIconPath = visibleMarkerFilter?.iconPath || ''
+        // 선택된 마커 스타일 결정
+        const businessTypes = [...new Set(clickedMerchants.map(m => m.business_type))]
+        const isMultiType = businessTypes.length > 1
+        const primaryMerchant = clickedMerchants[0]
+        const markerFilter = BUSINESS_TYPE_FILTERS.find(f => f.key === primaryMerchant?.business_type)
+        const markerColor = markerFilter?.color || '#FF6B6B'
+        const markerIconPath = markerFilter?.iconPath || ''
 
-        createSelectedMarkerOverlay(position, visibleMarkerColor, visibleMarkerIconPath, isVisibleMultiType)
+        createSelectedMarkerOverlay(position, markerColor, markerIconPath, isMultiType)
 
         // Analytics: 마커 클릭
-        Analytics.markerClick(visibleMerchants.length, visibleBusinessTypes)
+        Analytics.markerClick(clickedMerchants.length, businessTypes)
       })
 
       markers.push(marker)
@@ -519,9 +507,6 @@ function App() {
 
       if (!clusters || clusters.length === 0) return
 
-      // 현재 필터 상태 참조
-      const { isSearchMode, selectedFilters } = searchStateRef.current
-
       clusters.forEach(cluster => {
         const clusterMarkers = cluster.getMarkers() || []
         if (clusterMarkers.length < 2) return
@@ -537,13 +522,10 @@ function App() {
         const businessTypeCounts = {}
         let totalMerchants = 0
         clusterMarkers.forEach(marker => {
-          const mList = marker._merchantList || []
-          // 현재 필터에 맞는 가맹점만 집계
-          const filteredList = isSearchMode
-            ? mList
-            : mList.filter(m => selectedFilters.includes(m.business_type))
-          totalMerchants += filteredList.length
-          filteredList.forEach(m => {
+          // 마커에 저장된 필터링된 가맹점 목록 사용
+          const visibleList = marker._visibleMerchantList || []
+          totalMerchants += visibleList.length
+          visibleList.forEach(m => {
             const bt = m.business_type
             if (bt) {
               businessTypeCounts[bt] = (businessTypeCounts[bt] || 0) + 1
@@ -628,6 +610,9 @@ function App() {
       const filteredList = merchantList.filter(m => selectedFilters.includes(m.business_type))
 
       if (filteredList.length === 0) return false
+
+      // 마커에 필터링된 리스트 저장 (마커 클릭 시 사용)
+      marker._visibleMerchantList = filteredList
 
       // 마커 이미지 업데이트 (필터링된 개수 기준)
       const uniqueBusinessTypes = [...new Set(filteredList.map(m => m.business_type))]
@@ -746,6 +731,7 @@ function App() {
       })
 
       marker._merchantList = merchantList
+      marker._visibleMerchantList = merchantList // 검색 결과는 이미 필터링됨
       marker._locationKey = key
 
       kakao.maps.event.addListener(marker, 'click', () => {
@@ -759,11 +745,44 @@ function App() {
         marker.setMap(null)
         selectedMarkerRef.current = marker
 
-        const overlay = createSelectedMarkerOverlay(position, merchantList)
+        // Marker에 저장된 필터링된 가맹점 목록 사용
+        const clickedMerchants = marker._visibleMerchantList || []
+
+        if (clickedMerchants.length === 0) {
+          return // 보이는 가맹점이 없으면 무시
+        }
+
+        // 지도 중심 이동 (바텀시트 고려)
+        const mapContainer = mapRef.current
+        if (mapContainer) {
+          const mapHeight = mapContainer.offsetHeight
+          const bottomSheetHeight = clickedMerchants.length === 1 ? 200 : 350
+          const safeMargin = 40
+          const targetY = mapHeight * 0.33
+          const availableSpace = mapHeight - bottomSheetHeight - safeMargin
+          const offsetY = Math.min(targetY, availableSpace / 2)
+          const projection = map.getProjection()
+          const centerPoint = projection.pointFromCoords(position)
+          const offsetPoint = new kakao.maps.Point(centerPoint.x, centerPoint.y + (mapHeight / 2 - offsetY))
+          const offsetPosition = projection.coordsFromPoint(offsetPoint)
+          map.panTo(offsetPosition)
+        } else {
+          map.panTo(position)
+        }
+
+        setSelectedMerchants(clickedMerchants)
+
+        // 선택된 마커 스타일 결정
+        const businessTypes = [...new Set(clickedMerchants.map(m => m.business_type))]
+        const isMultiType = businessTypes.length > 1
+        const primaryMerchant = clickedMerchants[0]
+        const markerFilter = BUSINESS_TYPE_FILTERS.find(f => f.key === primaryMerchant?.business_type)
+        const markerColor = markerFilter?.color || '#FF6B6B'
+        const markerIconPath = markerFilter?.iconPath || ''
+
+        const overlay = createSelectedMarkerOverlay(position, markerColor, markerIconPath, isMultiType)
         overlay.setMap(map)
         selectedOverlayRef.current = overlay
-
-        setSelectedMerchants(merchantList)
       })
 
       marker.setMap(map)
@@ -890,7 +909,7 @@ function App() {
         {!search.isSearchActive && !search.isSearchMode && (
           <DataStatus
             formattedLastUpdated={formattedLastUpdated}
-            totalCount={Object.values(categoryCounts).reduce((sum, count) => sum + count, 0) || merchants.length}
+            totalCount={Object.values(categoryCounts).reduce((sum, count) => sum + count, 0) || allMerchants.length}
           />
         )}
 

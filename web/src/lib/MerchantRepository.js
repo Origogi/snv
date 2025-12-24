@@ -51,6 +51,9 @@ class MerchantRepository {
     /** @type {Set<Function>} visibleMerchants 변경 구독자 */
     this.listeners = new Set()
 
+    /** @type {Set<Function>} allMerchants 변경 구독자 */
+    this.allMerchantsListeners = new Set()
+
     /** @type {Set<Function>} 로딩 상태 변경 구독자 */
     this.statusListeners = new Set()
 
@@ -182,6 +185,21 @@ class MerchantRepository {
   }
 
   /**
+   * allMerchants 변경 구독 (로드된 모든 가맹점)
+   * @param {(merchants: Merchant[]) => void} listener - 콜백 함수
+   * @returns {() => void} unsubscribe 함수
+   */
+  subscribeAll(listener) {
+    this.allMerchantsListeners.add(listener)
+    // 즉시 현재 값 전달
+    listener(this.getAllCachedMerchants())
+
+    return () => {
+      this.allMerchantsListeners.delete(listener)
+    }
+  }
+
+  /**
    * 로딩 상태 변경 구독
    * @param {(status: LoadingStatus) => void} listener - 콜백 함수
    * @returns {() => void} unsubscribe 함수
@@ -295,6 +313,16 @@ class MerchantRepository {
   }
 
   /**
+   * allMerchants 리스너들에게 변경 알림
+   */
+  _notifyAllMerchantsListeners() {
+    const allMerchants = this.getAllCachedMerchants()
+    for (const listener of this.allMerchantsListeners) {
+      listener(allMerchants)
+    }
+  }
+
+  /**
    * 로딩 상태 변경 및 알림
    * @param {boolean} loading
    * @param {'cache'|'network'|null} source
@@ -341,6 +369,12 @@ class MerchantRepository {
         this.loadedCategories.add(category)
         await this._setCachedCategory(category, categoryData)
       }
+
+      // allMerchants 리스너들에게 알림
+      this._notifyAllMerchantsListeners()
+    } else if (categories.length > 0) {
+      // 캐시에서만 로드한 경우에도 알림
+      this._notifyAllMerchantsListeners()
     }
   }
 
