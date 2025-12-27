@@ -746,16 +746,42 @@ function App() {
     }
   }, [search.isSearchMode, visibleMerchants, createMarkerImage])
 
-  // 줌 핸들러
+  // 줌 핸들러 - 현재 화면 중심 기준으로 줌
   const handleZoomIn = useCallback(() => {
     if (mapInstanceRef.current) {
-      mapInstanceRef.current.setLevel(mapInstanceRef.current.getLevel() - 1)
+      const map = mapInstanceRef.current
+
+      // 현재 화면의 중심 좌표 계산
+      const bounds = map.getBounds()
+      const swLatLng = bounds.getSouthWest()
+      const neLatLng = bounds.getNorthEast()
+      const centerLat = (swLatLng.getLat() + neLatLng.getLat()) / 2
+      const centerLng = (swLatLng.getLng() + neLatLng.getLng()) / 2
+      const { kakao } = window
+      const centerPosition = new kakao.maps.LatLng(centerLat, centerLng)
+
+      // 화면 중심을 지도 중심으로 설정 후 줌
+      map.setCenter(centerPosition)
+      map.setLevel(map.getLevel() - 1)
     }
   }, [])
 
   const handleZoomOut = useCallback(() => {
     if (mapInstanceRef.current) {
-      mapInstanceRef.current.setLevel(mapInstanceRef.current.getLevel() + 1)
+      const map = mapInstanceRef.current
+
+      // 현재 화면의 중심 좌표 계산
+      const bounds = map.getBounds()
+      const swLatLng = bounds.getSouthWest()
+      const neLatLng = bounds.getNorthEast()
+      const centerLat = (swLatLng.getLat() + neLatLng.getLat()) / 2
+      const centerLng = (swLatLng.getLng() + neLatLng.getLng()) / 2
+      const { kakao } = window
+      const centerPosition = new kakao.maps.LatLng(centerLat, centerLng)
+
+      // 화면 중심을 지도 중심으로 설정 후 줌
+      map.setCenter(centerPosition)
+      map.setLevel(map.getLevel() + 1)
     }
   }, [])
 
