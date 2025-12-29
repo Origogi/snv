@@ -16,6 +16,10 @@ import {
 import { initAnalytics, Analytics } from './lib/firebase'
 import './App.css'
 
+/**
+ * 성남 아동수당 가맹점 지도 메인 애플리케이션 컴포넌트
+ * 지도 초기화, 마커 관리, 검색 및 필터링 로직을 총괄합니다.
+ */
 function App() {
   const mapRef = useRef(null)
   const mapInstanceRef = useRef(null)
@@ -30,10 +34,10 @@ function App() {
   const [selectedMerchants, setSelectedMerchants] = useState(null)
   const [showInfoModal, setShowInfoModal] = useState(false)
 
-  // 데이터 로드 (지도 로드 후 트리거)
+  // 가맹점 데이터 관리 커스텀 훅
   const {
-    allMerchants,      // 로드된 모든 가맹점 (마커 생성용)
-    visibleMerchants,  // 검색/필터 적용된 가맹점
+    allMerchants,      // 로드된 모든 가맹점 데이터 (마커 생성용)
+    visibleMerchants,  // 현재 필터/검색이 적용된 가맹점 (결과 리스트용)
     loading,
     lastUpdatedAt,
     categoryCounts,
@@ -44,14 +48,14 @@ function App() {
   } = useMerchants()
   const dataLoadStartedRef = useRef(false)
 
-  // Analytics 초기화 및 페이지 뷰 로깅
+  // Firebase Analytics 초기화
   useEffect(() => {
     initAnalytics().then(() => {
       Analytics.pageView()
     })
   }, [])
 
-  // 지도 로드 완료 후 데이터 로드 시작
+  // 지도 로드가 완료되면 데이터 로딩을 시작합니다.
   useEffect(() => {
     if (mapLoaded && !dataLoadStartedRef.current) {
       dataLoadStartedRef.current = true
@@ -59,7 +63,10 @@ function App() {
     }
   }, [mapLoaded, startInitialLoad])
 
-  // 선택 상태 초기화 핸들러 (검색/필터 변경 시 호출)
+  /**
+   * 마커 선택 상태(오버레이 및 강조 표시)를 초기화합니다.
+   * 검색 결과나 필터가 바뀔 때 호출됩니다.
+   */
   const clearSelection = useCallback(() => {
     setSelectedMerchants(null)
     if (selectedOverlayRef.current) {
@@ -72,60 +79,56 @@ function App() {
     }
   }, [])
 
-  // 검색 훅
+  // 검색 상태 관리 커스텀 훅
   const search = useSearch(mapInstanceRef, clearSelection)
 
-  // 검색 실행 래퍼 (Analytics 포함 + DB 검색)
+  // 검색 실행 래퍼 (Analytics 기록 및 DB 검색 연동)
   const handleSearch = useCallback(async (query) => {
     search.executeSearch(query)
     if (query.trim()) {
-      // DB에서 검색 → Repository가 visibleMerchants 업데이트
+      // 로컬 DB(IndexedDB) 검색 수행
       await searchFromDB(query.trim())
     } else {
       clearSearchFromDB()
     }
   }, [search, searchFromDB, clearSearchFromDB])
 
-  // 검색 결과 변경 시 Analytics 로깅
+  // 검색 결과가 변경될 때 Analytics 로깅
   useEffect(() => {
     if (search.isSearchMode && search.appliedSearchQuery) {
-      // 검색 모드일 때 visibleMerchants가 검색 결과
       Analytics.search(search.appliedSearchQuery, visibleMerchants.length)
     }
   }, [search.isSearchMode, search.appliedSearchQuery, visibleMerchants.length])
 
-  // 검색 초기화 래퍼 (검색 결과도 함께 초기화)
+  // 적용된 검색 필터를 초기화합니다.
   const handleClearAppliedSearch = useCallback(() => {
     search.clearAppliedSearch()
     clearSearchFromDB()
   }, [search, clearSearchFromDB])
 
-  // 검색 비활성화 래퍼 (← 버튼)
-  // 검색 모드: 검색 결과 유지, 입력 중인 텍스트를 appliedSearchQuery로 복원
-  // 카테고리 모드: 입력 중인 텍스트 초기화
+  // 검색 입력을 취소하고 이전 상태로 복구합니다 (뒤로 가기 버튼).
   const handleDeactivateSearch = useCallback(() => {
-    // 입력 중인 searchQuery를 appliedSearchQuery로 복원 (또는 빈 문자열)
     search.setSearchQuery(search.appliedSearchQuery)
     search.deactivateSearch(false)
   }, [search])
 
-  // 검색어 클리어 래퍼 (입력 필드 X 버튼)
+  // 검색창 입력 텍스트를 지웁니다 (X 버튼).
   const handleClearSearchQuery = useCallback(() => {
     search.clearSearch()
     clearSearchFromDB()
   }, [search, clearSearchFromDB])
 
-  // 필터 훅 - 기본값: 음식점
+  // 업종 필터 상태 관리 (기본값: 음식점)
   const filters = useFilters(['음식점'], clearSelection)
 
-  // 필터 변경 시 새 카테고리 데이터 로드
+  // 선택된 필터가 변경되면 해당하는 카테고리 데이터를 새로 로드합니다.
   useEffect(() => {
     if (filters.selectedFilters.length > 0) {
       loadByCategories(filters.selectedFilters)
     }
   }, [filters.selectedFilters, loadByCategories])
 
-  // 마지막 업데이트 날짜 포맷팅
+  // 데이터 최종 업데이트 일자 포맷팅 (YYYY.MM.DD)
   const formattedLastUpdated = useMemo(() => {
     if (!lastUpdatedAt) return null
     try {
@@ -136,14 +139,13 @@ function App() {
     }
   }, [lastUpdatedAt])
 
-  // 필터링된 가맹점 목록
-  // Repository가 visibleMerchants를 관리하므로 이미 필터링/검색된 결과
+  // 필터링된 가맹점 목록 (Repository가 관리하는 상태를 그대로 사용)
   const filteredMerchants = useMemo(() => {
     return visibleMerchants
   }, [visibleMerchants])
 
 
-  // 전체 가맹점 좌표별 그룹화 (마커 생성용)
+  // 같은 좌표에 있는 가맹점들을 그룹화합니다. (마커 밀집 대응)
   const allMerchantsByLocation = useMemo(() => {
     const groups = []
 

@@ -1,5 +1,25 @@
 import { forwardRef, useRef, useEffect, useState } from 'react'
 
+/**
+ * 앱의 통합 검색바 컴포넌트
+ * 검색 활성화 상태에 따라 입력창, 최근 검색어 목록, 검색 가이드를 표시합니다.
+ * 
+ * @param {Object} props
+ * @param {boolean} props.isSearchActive - 현재 검색창이 활성화(입력 중)되어 있는지 여부
+ * @param {boolean} props.isSearchMode - 검색 결과가 적용된 상태인지 여부
+ * @param {string} props.searchQuery - 현재 입력 중인 검색어
+ * @param {string} props.appliedSearchQuery - 실제로 적용된 검색어
+ * @param {number} props.filteredCount - 검색 결과 가맹점 수
+ * @param {Array} props.recentSearches - 최근 검색어 목록
+ * @param {Function} props.onActivate - 검색바 클릭 시 활성화 처리
+ * @param {Function} props.onDeactivate - 검색 종료(뒤로가기) 처리
+ * @param {Function} props.onSearch - 검색 실행 처리
+ * @param {Function} props.onClearApplied - 적용된 검색 결과 초기화 처리
+ * @param {Function} props.onQueryChange - 입력어 변경 처리
+ * @param {Function} props.onRemoveRecent - 특정 최근 검색어 삭제
+ * @param {Function} props.onClearAllRecent - 최근 검색어 전체 삭제
+ * @param {Function} props.onMenuClick - 좌측 아이콘(메뉴) 클릭 처리
+ */
 export const SearchBar = forwardRef(function SearchBar({
   isSearchActive,
   isSearchMode,
@@ -16,24 +36,23 @@ export const SearchBar = forwardRef(function SearchBar({
   onClearAllRecent,
   onMenuClick,
 }, ref) {
-  // PC용 입력 필드 ref
+  // PC 뷰포트용 입력 필드 참조
   const pcInputRef = useRef(null)
 
-  // 닫기 애니메이션 상태 (isSearchActive가 false로 변경될 때만 사용)
+  // 검색바 닫기 애니메이션 제어를 위한 상태
   const [isClosing, setIsClosing] = useState(false)
   const prevSearchActiveRef = useRef(isSearchActive)
 
-  // 오버레이 표시 여부: isSearchActive가 true이거나 닫기 애니메이션 중일 때
+  // 검색 오버레이 표시 조건: 활성 상태이거나 닫히는 중일 때
   const showOverlay = isSearchActive || isClosing
 
-  // isSearchActive 변경 감지하여 닫기 애니메이션 처리
+  // 검색바 활성화 상태 변화에 따른 애니메이션 처리
   useEffect(() => {
     const wasActive = prevSearchActiveRef.current
     prevSearchActiveRef.current = isSearchActive
 
-    // 활성 → 비활성 전환 시 닫기 애니메이션 시작
+    // 활성 상태에서 비활성으로 바뀔 때만 애니메이션 적용 (PC 환경)
     if (wasActive && !isSearchActive) {
-      // PC에서만 닫기 애니메이션 적용
       if (window.matchMedia('(min-width: 768px)').matches) {
         setIsClosing(true)
         const timer = setTimeout(() => {
@@ -44,10 +63,9 @@ export const SearchBar = forwardRef(function SearchBar({
     }
   }, [isSearchActive])
 
-  // PC에서 활성화 시 포커스
+  // 검색창 활성화 시 자동으로 포커스를 이동합니다.
   useEffect(() => {
     if (isSearchActive && pcInputRef.current) {
-      // PC인지 확인 (미디어 쿼리)
       if (window.matchMedia('(min-width: 768px)').matches) {
         setTimeout(() => pcInputRef.current?.focus(), 100)
       }
